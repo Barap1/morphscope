@@ -1,0 +1,5 @@
+# Canonical documents intentionally preserve source whitespace and final blank lines.
+MorphScope_PRD.md whitespace=-trailing-space,-blank-at-eof
+MorphScope_spec.md whitespace=-trailing-space
+docs/product-prd.md whitespace=-trailing-space,-blank-at-eof
+docs/build-spec.md whitespace=-trailing-space

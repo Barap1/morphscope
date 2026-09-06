@@ -1,0 +1,51 @@
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and package-manager logs
+node_modules/
+pnpm-debug.log*
+
+# Build and test output
+dist/
+build/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# Local MorphScope traces, artifacts, and databases
+.morphscope/
+.morphscope-data/
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.db
+*.db-*
+
+# Operating-system and editor files
+.DS_Store
+.AppleDouble
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python tooling and analysis outputs
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+analysis/.cache/
+analysis/output/
+analysis/results/
+*.egg-info/

@@ -1,0 +1,16 @@
+.git/
+node_modules/
+.next/
+dist/
+build/
+coverage/
+out/
+.morphscope/
+.morphscope-data/
+pnpm-lock.yaml
+
+# These files are canonical sources or byte-for-byte copies and must not be reformatted.
+MorphScope_PRD.md
+MorphScope_spec.md
+docs/product-prd.md
+docs/build-spec.md
