@@ -66,7 +66,7 @@ credential or raw provider response.
   five task definitions used by the dashboard, including all four task IDs with published
   runs. Hosted task pages therefore do not depend on benchmark files being present in the
   Vercel deployment.
-- The final Vercel deployment is `dpl_8wB4hKZBavutUFz9zgVrZxMTm462`, status `READY`, in project
+- The final Vercel deployment is `dpl_GJ6am7qMTaWidwMfuJpGbZojFuwW`, status `READY`, in project
   `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`. The
   hosted data path is read-only and uses the committed sanitized snapshot; no provider
   credentials are required by the web runtime.
@@ -80,7 +80,15 @@ credential or raw provider response.
   private filesystem paths, bearer tokens, or provider credentials in representative responses.
 - The existing CLI trace export was run once against the Docker fixture and wrote a non-empty
   `7,448`-byte JSON export to a temporary path, which was removed immediately afterward.
-- Covered only by static/contract checks: an interactive browser session was unavailable in this
-  environment, so keyboard traversal, reduced-motion behavior, browser console errors, and
-  visual responsive inspection are not claimed as manually verified. The CSS/source review did
-  verify focus-visible handling and reduced-motion rules are present.
+- Browser review on the final deployment used temporary Chrome `152.0.7977.82` through
+  `agent-browser`: desktop overview, trace replay, and comparison screenshots were visually
+  inspected; a `390x844` mobile screenshot was inspected; and the `dark` plus `reduced-motion`
+  media settings were exercised. A bounded tab traversal reached the skip link, mobile navigation,
+  command menu, theme control, primary links, latest-trace link, and the focusable evidence block;
+  the mobile navigation toggle opened with `aria-expanded="true"`.
+- Axe `4.12.1` reported zero violations on the final comparison page (`46` passes, `0`
+  incomplete) and zero violations on the final homepage (`38` passes, `1` incomplete). The one
+  homepage incomplete item is the contrast rule’s inability to determine the background behind
+  text over the hero image; it is not reported as a violation. Final homepage and comparison
+  checks emitted no console or page-error output. Focus-visible and reduced-motion rules are also
+  present in the CSS.
