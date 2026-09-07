@@ -64,15 +64,22 @@ if (packageManifest) {
     "node scripts/verify-workspace.ts",
     "workspace verification script",
   );
-  requireEqual(scripts.typecheck, "tsc --noEmit --project tsconfig.json", "typecheck script");
+  requireEqual(
+    scripts.typecheck,
+    "tsc --noEmit --project tsconfig.json && pnpm --filter @morphscope/ui typecheck && pnpm --filter @morphscope/web typecheck",
+    "typecheck script",
+  );
+  requireEqual(scripts["dev:web"], "pnpm --filter @morphscope/web dev", "web dev script");
+  requireEqual(scripts["build:web"], "pnpm --filter @morphscope/web build", "web build script");
   requireEqual(scripts.lint, "eslint . --max-warnings 0", "lint script");
   requireEqual(scripts.test, "vitest run --passWithNoTests", "test script");
   requireEqual(scripts["format:check"], "prettier --check .", "format check script");
 
   const expectedDevelopmentDependencies: Record<string, string> = {
-    "@eslint/js": "10.0.1",
+    "@eslint/js": "9.39.5",
     "@types/node": "24.13.3",
-    eslint: "10.10.0",
+    eslint: "9.39.5",
+    "eslint-config-next": "16.3.4",
     prettier: "3.9.6",
     typescript: "6.0.3",
     "typescript-eslint": "8.69.0",

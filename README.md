@@ -25,12 +25,22 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 0
+## Current scope: CHECKPOINT 1
 
-The current checkpoint establishes the pnpm TypeScript monorepo metadata, source-of-truth
-documentation copies, formatting and linting rules, environment placeholders, and local
-workspace verification. Product applications, packages, benchmark runs, traces, and
-metrics are intentionally not part of this bootstrap.
+The current checkpoint establishes the MorphScope web shell, responsive navigation,
+command menu, theme support, visual tokens, and reusable UI primitives. It includes
+honest empty states for the initial routes. Runner, persistence, provider integrations,
+traces, benchmark runs, and metrics are intentionally not part of this checkpoint.
+
+To work on the web shell:
+
+```bash
+pnpm dev:web
+pnpm build:web
+```
+
+The shell can be inspected locally, but it does not claim that future execution or
+trace-backed capabilities are connected yet.
 
 No benchmark results or experimental findings are claimed yet. All future results must
 come from real repository execution and be accompanied by their methodology and limits.
