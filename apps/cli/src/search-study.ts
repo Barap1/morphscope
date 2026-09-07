@@ -214,7 +214,7 @@ async function runConfiguration(input: {
         searchSpan.update({ outputArtifactIds: [searchArtifact.sha256] });
         searchSpan.end("ok");
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = redactText(error instanceof Error ? error.message : String(error)).value;
         searchSpan.event("search_error", { provider: configurationId, message });
         searchSpan.end("error", {
           category: "provider_failure",
@@ -324,7 +324,7 @@ async function runConfiguration(input: {
       evaluation: evaluation ?? null,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactText(error instanceof Error ? error.message : String(error)).value;
     terminalState = "environment_error";
     rootSpan.event("run_error", { message });
     rootSpan.end("error", {

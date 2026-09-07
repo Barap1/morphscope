@@ -246,7 +246,7 @@ async function main(): Promise<void> {
     );
     if (terminalState !== "resolved") process.exitCode = 1;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactText(error instanceof Error ? error.message : String(error)).value;
     if (rootSpan) {
       rootSpan.event("run_error", { message });
       rootSpan.end("error", {
@@ -283,7 +283,7 @@ function optionalValidation(value: unknown, kind: "syntax" | "build" | "reposito
 }
 
 main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
+  const message = redactText(error instanceof Error ? error.message : String(error)).value;
   console.error(`MorphScope CLI failed: ${message}`);
   process.exitCode = 1;
 });

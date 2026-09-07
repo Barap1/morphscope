@@ -3,7 +3,7 @@ import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import { MorphClient } from "@morphscope/providers";
 import { ContentAddressedArtifactStore, SqliteTraceStore } from "@morphscope/storage";
-import { redactSecrets, TraceWriter } from "@morphscope/tracing";
+import { redactSecrets, redactText, TraceWriter } from "@morphscope/tracing";
 
 type SpikeOptions = {
   repoRoot: string;
@@ -132,7 +132,7 @@ async function main(): Promise<void> {
       repository: options.repoRoot,
       file: options.file,
       capability: options.only,
-      ...(warpGrep ? { warpGrep } : {}),
+      ...(warpGrep ? { warpGrep: persistedWarpGrep(warpGrep) } : {}),
       ...(fastApply
         ? {
             fastApply: {
@@ -140,19 +140,19 @@ async function main(): Promise<void> {
               originalSha256: fastApply.originalSha256,
               finalSha256: fastApply.finalSha256,
               changes: fastApply.changes,
-              udiff: fastApply.udiff,
+              udiff: fastApply.udiff ? redactText(fastApply.udiff).value : undefined,
               metadata: fastApply.metadata,
             },
           }
         : {}),
-      ...(compact ? { compact } : {}),
+      ...(compact ? { compact: persistedCompact(compact) } : {}),
       ...(diffArtifact ? { diffArtifact } : {}),
       trace: trace.read(),
     });
     writeFileSync(join(outputRoot, "result.json"), JSON.stringify(result, null, 2));
     console.log(JSON.stringify({ runId, traceId, outputRoot }, null, 2));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactText(error instanceof Error ? error.message : String(error)).value;
     rootSpan.event("morph_spike_error", { message });
     rootSpan.end("error", {
       category: "provider_failure",
@@ -169,6 +169,35 @@ async function main(): Promise<void> {
 }
 
 main().catch((error) => {
-  console.error(`Morph spike failed: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(
+    `Morph spike failed: ${redactText(error instanceof Error ? error.message : String(error)).value}`,
+  );
   process.exitCode = 1;
 });
+
+function persistedWarpGrep(
+  result: NonNullable<Awaited<ReturnType<MorphClient["warpGrep"]>>>,
+): object {
+  return {
+    success: result.success,
+    contexts: result.contexts.map((context) => ({
+      file: redactText(context.file).value,
+      content: redactText(context.content).value,
+    })),
+    ...(result.contextSource ? { contextSource: result.contextSource } : {}),
+    ...(result.summary ? { summary: redactText(result.summary).value } : {}),
+    toolCalls: result.toolCalls,
+    metadata: result.metadata,
+  };
+}
+
+function persistedCompact(
+  result: NonNullable<Awaited<ReturnType<MorphClient["compact"]>>>,
+): object {
+  return {
+    beforeBytes: result.beforeBytes,
+    afterBytes: result.afterBytes,
+    retainedLines: result.retainedLines,
+    metadata: result.metadata,
+  };
+}

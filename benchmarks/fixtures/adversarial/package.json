@@ -1,0 +1,8 @@
+{
+  "name": "morphscope-adversarial-sandbox-fixture",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/adversarial.test.js"
+  }
+}

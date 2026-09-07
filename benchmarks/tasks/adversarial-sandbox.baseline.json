@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "actions": [
+    { "type": "command", "command": "node --version" },
+    { "type": "search", "query": "<script>", "path": "src" }
+  ]
+}

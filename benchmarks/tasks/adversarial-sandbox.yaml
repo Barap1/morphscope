@@ -1,0 +1,18 @@
+id: adversarial-sandbox
+repository: benchmarks/fixtures/adversarial
+commit: fixture-v1
+issue: Verify that hostile fixture output and task credentials remain inside the controlled sandbox boundary.
+setup: node --version
+evaluation: node test/adversarial.test.js
+resourceLimits:
+  maxDurationMs: 30000
+  maxTurns: 4
+  maxOutputTokens: 1000
+  maxCostUsd: 0
+tags:
+  - fixture
+  - security
+  - sandbox
+metadata:
+  baselinePlan: benchmarks/tasks/adversarial-sandbox.baseline.json
+  fixtureVersion: fixture-v1

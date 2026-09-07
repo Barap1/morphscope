@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { lstatSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { ArtifactManifestSchema, type ArtifactManifest } from "@morphscope/schemas";
 
 export type ArtifactPutInput = {
@@ -19,8 +19,9 @@ export class ContentAddressedArtifactStore {
   readonly rootDirectory: string;
 
   constructor(rootDirectory: string) {
-    this.rootDirectory = resolve(rootDirectory);
-    mkdirSync(this.rootDirectory, { recursive: true });
+    const resolvedRoot = resolve(rootDirectory);
+    mkdirSync(resolvedRoot, { recursive: true });
+    this.rootDirectory = realpathSync.native(resolvedRoot);
   }
 
   put(input: ArtifactPutInput): StoredArtifact {
@@ -38,6 +39,9 @@ export class ContentAddressedArtifactStore {
       writeFileSync(storagePath, content, { flag: "wx", mode: 0o600 });
     } catch (error) {
       if (!isAlreadyExistsError(error)) throw error;
+      if (!isSafeArtifactFile(this.rootDirectory, storagePath)) {
+        throw new Error("artifact path is not a regular file inside the artifact store root");
+      }
     }
 
     return ArtifactManifestSchema.parse({
@@ -69,14 +73,31 @@ export class ContentAddressedArtifactStore {
   private pathForHash(sha256: string): string | undefined {
     if (!/^[a-f0-9]{64}$/.test(sha256)) return undefined;
     const path = resolve(this.rootDirectory, "sha256", sha256.slice(0, 2), sha256);
-    if (!path.startsWith(`${this.rootDirectory}/`)) return undefined;
+    if (!isWithin(this.rootDirectory, path)) return undefined;
     try {
-      statSync(path);
-      return path;
+      return isSafeArtifactFile(this.rootDirectory, path) ? path : undefined;
     } catch {
       return undefined;
     }
   }
+}
+
+function isSafeArtifactFile(root: string, path: string): boolean {
+  try {
+    const stat = lstatSync(path);
+    if (!stat.isFile() || stat.isSymbolicLink()) return false;
+    return isWithin(root, realpathSync.native(path));
+  } catch {
+    return false;
+  }
+}
+
+function isWithin(root: string, candidate: string): boolean {
+  const relativePath = relative(resolve(root), resolve(candidate));
+  return (
+    relativePath === "" ||
+    (!relativePath.startsWith(`..${sep}`) && relativePath !== ".." && !isAbsolute(relativePath))
+  );
 }
 
 function isAlreadyExistsError(error: unknown): boolean {

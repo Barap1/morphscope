@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 13
+## Current scope: CHECKPOINT 14
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -162,6 +162,21 @@ live smoke test. Use `GROQ_API_KEY` with `openai/gpt-oss-120b` for reasoning in 
 development path; Morph credentials are only for the specialized WarpGrep, Fast Apply, and Compact
 spikes. Do not send one provider's credential to another provider, persist raw provider responses,
 or silently substitute a model in a controlled comparison.
+
+The security fixture is intentionally small and offline:
+
+```bash
+pnpm morphscope task validate benchmarks/tasks/adversarial-sandbox.yaml
+pnpm morphscope run benchmarks/tasks/adversarial-sandbox.yaml --config baseline
+```
+
+The sandbox rejects workspace path escapes and patch traversal before application, copies only a
+sanitized child environment, caps captured output, enforces command timeouts, and refuses symlink
+reads that resolve outside the workspace. Trace, artifact, and web readers reject symlink-backed
+files, and provider/spike error artifacts redact known credential formats. The local runner is a
+developer-mode process boundary rather than a claim of kernel-level isolation; do not execute
+untrusted repositories with host credentials or broaden the command allowlist without adding an OS
+or container enforcement layer.
 
 The Morph technical-spike boundary is implemented and live validation is credential-gated.
 After setting `MORPH_API_KEY` in local environment configuration, run:

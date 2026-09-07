@@ -448,6 +448,8 @@ export class SandboxWorkspace {
     if (patch.length === 0 || patch.includes("\0")) {
       throw new SandboxInputError("Patch must be non-empty and must not contain NUL bytes");
     }
+    const files = patchFilePaths(patch);
+    for (const file of files) this.resolvePath(file, "patch path", true);
     const patchPath = join(this.rootPath, ".morphscope-apply.patch");
     writeFileSync(patchPath, patch, { encoding: "utf8", flag: "wx", mode: 0o600 });
     try {
@@ -460,9 +462,7 @@ export class SandboxWorkspace {
           `Patch application failed: ${result.stderr || result.stdout}`.trim(),
         );
       }
-      const files = [...patch.matchAll(/^\+\+\+ b\/(.+)$/gm)].map((match) => match[1]);
-      for (const file of files) this.resolvePath(file, "patch path", true);
-      return { files: [...new Set(files)] };
+      return { files };
     } finally {
       rmSync(patchPath, { force: true });
     }
@@ -980,6 +980,14 @@ function parseCommandLine(input: string): string[] {
     tokens.push(token);
   }
   return tokens;
+}
+
+function patchFilePaths(patch: string): string[] {
+  const paths = [
+    ...[...patch.matchAll(/^--- a\/(.+)$/gmu)].map((match) => match[1]),
+    ...[...patch.matchAll(/^\+\+\+ b\/(.+)$/gmu)].map((match) => match[1]),
+  ].filter((path) => path !== "/dev/null");
+  return [...new Set(paths)];
 }
 
 function assertWithin(rootPath: string, candidate: string, label: string): void {

@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { aggregateRuns } from "@morphscope/evaluator";
 import { RunSchema, type Run } from "@morphscope/schemas";
 
@@ -450,11 +450,26 @@ function readJson(sourceFile: string): Record<string, unknown> | null {
 
 function readText(sourceFile: string): string | null {
   try {
-    if (!statSync(sourceFile).isFile() || statSync(sourceFile).size > MAX_JSON_BYTES) return null;
+    const stat = lstatSync(sourceFile);
+    if (
+      !stat.isFile() ||
+      stat.isSymbolicLink() ||
+      stat.size > MAX_JSON_BYTES ||
+      !isWithin(repoRoot(), realpathSync.native(sourceFile))
+    )
+      return null;
     return readFileSync(sourceFile, "utf8");
   } catch {
     return null;
   }
+}
+
+function isWithin(root: string, candidate: string): boolean {
+  const relativePath = relative(resolve(root), resolve(candidate));
+  return (
+    relativePath === "" ||
+    (!relativePath.startsWith(`..${sep}`) && relativePath !== ".." && !isAbsolute(relativePath))
+  );
 }
 
 function repoRoot(): string {

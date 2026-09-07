@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "cp12-v1",
+  "version": "cp14-v1",
   "notes": [
     "The initial catalog is intentionally small and development-sized.",
     "The real-repository entry is catalog-only until a pinned external checkout and license metadata are supplied."
@@ -32,6 +32,15 @@
       "changeShape": "bug-fix",
       "status": "runnable",
       "taskFile": "benchmarks/tasks/python-slug.yaml"
+    },
+    {
+      "id": "adversarial-sandbox",
+      "language": "javascript",
+      "repositoryType": "controlled-fixture",
+      "taskShape": "containment-probe",
+      "changeShape": "no-edit",
+      "status": "runnable",
+      "taskFile": "benchmarks/tasks/adversarial-sandbox.yaml"
     },
     {
       "id": "morphscope-docs-search",

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -30,6 +30,28 @@ describe("ContentAddressedArtifactStore", () => {
     expect(second).toEqual(first);
     expect(store.has(first.sha256)).toBe(true);
     expect(store.read(first.sha256).toString("utf8")).toBe("safe trace output");
+  });
+
+  it("does not follow symlinks at content-addressed artifact paths", () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-artifacts-"));
+    const outside = mkdtempSync(join(tmpdir(), "morphscope-artifact-outside-"));
+    temporaryDirectories.push(directory, outside);
+    const store = new ContentAddressedArtifactStore(directory);
+    const input = {
+      content: "artifact content",
+      mimeType: "text/plain",
+      redactionStatus: "not_redacted",
+      producerSpanId: "span-002",
+    };
+    const artifact = store.put(input);
+    const path = join(directory, artifact.storagePath);
+    rmSync(path);
+    writeFileSync(join(outside, "secret.txt"), "outside secret", "utf8");
+    symlinkSync(join(outside, "secret.txt"), path);
+
+    expect(store.has(artifact.sha256)).toBe(false);
+    expect(() => store.read(artifact.sha256)).toThrow("artifact not found");
+    expect(() => store.put(input)).toThrow("artifact path is not a regular file");
   });
 });
 

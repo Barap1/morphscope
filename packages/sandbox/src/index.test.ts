@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -50,7 +50,48 @@ describe("SandboxWorkspace", () => {
       commit: source.commit,
     });
     expect(() => workspace.readFile("../outside.txt")).toThrow(SandboxInputError);
+    expect(() =>
+      workspace.applyPatch(
+        "diff --git a/README.md b/../../outside.txt\n--- a/README.md\n+++ b/../../outside.txt\n@@ -1 +1 @@\n-before\n+escaped\n",
+      ),
+    ).toThrow(SandboxInputError);
     workspace.dispose();
+  });
+
+  it("keeps symlink reads and child credentials inside the sandbox boundary", () => {
+    const source = createRepository();
+    const outside = mkdtempSync(join(tmpdir(), "morphscope-sandbox-outside-"));
+    temporaryDirectories.push(outside);
+    writeFileSync(join(outside, "secret.txt"), "outside-secret\n", "utf8");
+    symlinkSync(join(outside, "secret.txt"), join(source.directory, "link.txt"));
+    execFileSync("git", ["add", "link.txt"], { cwd: source.directory });
+    execFileSync("git", ["commit", "--quiet", "-m", "symlink"], { cwd: source.directory });
+    const workspace = new SandboxManager().acquire({
+      source: source.directory,
+      commit: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: source.directory,
+        encoding: "utf8",
+      }).trim(),
+    });
+    const previousMorphKey = process.env.MORPH_API_KEY;
+    process.env.MORPH_API_KEY = "sandbox-test-secret";
+    try {
+      expect(() => workspace.readFile("link.txt")).toThrow(SandboxInputError);
+      const child = workspace.runCommand({
+        command: "node",
+        args: ["-e", "process.stdout.write(process.env.MORPH_API_KEY ?? 'missing')"],
+      });
+      expect(child.stdout).toBe("missing");
+      const hostile = workspace.runCommand({
+        command: "node",
+        args: ["-e", "process.stdout.write('<script>hostile</script>')"],
+      });
+      expect(hostile.stdout).toContain("<script>");
+    } finally {
+      if (previousMorphKey === undefined) delete process.env.MORPH_API_KEY;
+      else process.env.MORPH_API_KEY = previousMorphKey;
+      workspace.dispose();
+    }
   });
 
   it("captures command output and enforces command timeouts", () => {

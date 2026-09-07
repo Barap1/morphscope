@@ -44,7 +44,7 @@ async function main(): Promise<void> {
     writeResult(outputRoot, runId, traceId, result);
     console.log(JSON.stringify({ runId, traceId, outputRoot }, null, 2));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = redactSecrets(error instanceof Error ? error.message : String(error)) as string;
     rootSpan.event("groq_smoke_error", {
       provider: "groq",
       errorCode: error instanceof GroqProviderError ? error.code : "unknown",
@@ -107,6 +107,8 @@ function writeResult(
 }
 
 main().catch((error) => {
-  console.error("Groq smoke failed: " + (error instanceof Error ? error.message : String(error)));
+  console.error(
+    "Groq smoke failed: " + redactSecrets(error instanceof Error ? error.message : String(error)),
+  );
   process.exitCode = 1;
 });
