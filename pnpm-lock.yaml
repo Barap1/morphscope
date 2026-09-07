@@ -41,6 +41,9 @@ importers:
       '@morphscope/evaluator':
         specifier: workspace:*
         version: link:../../packages/evaluator
+      '@morphscope/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@morphscope/sandbox':
         specifier: workspace:*
         version: link:../../packages/sandbox
@@ -128,6 +131,22 @@ importers:
       '@morphscope/schemas':
         specifier: workspace:*
         version: link:../schemas
+    devDependencies:
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.0.0
+        version: 5.0.0(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+
+  packages/providers:
+    dependencies:
+      '@morphscope/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      '@morphscope/tracing':
+        specifier: workspace:*
+        version: link:../tracing
     devDependencies:
       typescript:
         specifier: 6.0.3

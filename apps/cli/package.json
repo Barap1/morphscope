@@ -12,6 +12,7 @@
   "dependencies": {
     "@morphscope/agent-core": "workspace:*",
     "@morphscope/evaluator": "workspace:*",
+    "@morphscope/providers": "workspace:*",
     "@morphscope/sandbox": "workspace:*",
     "@morphscope/schemas": "workspace:*",
     "@morphscope/storage": "workspace:*",

@@ -53,6 +53,21 @@ under `.morphscope/runs/<run-id>/`. The baseline is intentionally deterministic 
 offline for this checkpoint; it exercises real search, read, edit, setup, and evaluation
 commands without claiming model-provider results.
 
+The Morph technical-spike boundary is implemented but live validation is credential-gated.
+After setting `MORPH_API_KEY` in local environment configuration, run:
+
+```bash
+pnpm morphscope:morph-spike \
+  --file benchmarks/fixtures/buggy-greeting/src/greeting.js \
+  --search formatGreeting \
+  --instructions "Add punctuation to the greeting" \
+  --code-edit '// ... existing code ... return `Hello ${name}!`; // ... existing code ...'
+```
+
+The spike records provider metadata, trace spans, hashes, diff, and compacted context under
+`.morphscope/morph-spike/`. No live provider result is claimed until that command completes
+with a real credential.
+
 No benchmark results or experimental findings are claimed yet. All future results must
 come from real repository execution and be accompanied by their methodology and limits.
 
