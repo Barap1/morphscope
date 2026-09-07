@@ -52,3 +52,26 @@ credential or raw provider response.
 - Covered only by contract tests: broader adversarial behavior and host-kernel isolation beyond
   the configured Docker boundary. The earlier invalid bind-mount option was corrected before
   the successful default-mode run.
+
+## Hosted dashboard and read-only boundary
+
+- The sanitized snapshot was regenerated after commit `ebf85429b8fbe9e76f09cc44273a233ccc3b8b72`.
+  It contains `32` allowlisted runs, `12` experiments, and self-contained contracts for all
+  four published task IDs. Hosted task pages therefore do not depend on benchmark files being
+  present in the Vercel deployment.
+- The existing Vercel project is `barap1s-projects/morphscope`, with the production alias
+  `https://morphscope.vercel.app`. The hosted data path is read-only and uses the committed
+  sanitized snapshot; no provider credentials are required by the web runtime.
+- Targeted HTTPS smoke checks covered the homepage, experiments, one experiment detail, one
+  run detail, task details, comparison, failure explorer, and settings. A published trace route
+  rendered its `Trace replay` surface; comparison rendered the baseline/Morph timeline; and a
+  narrow mobile user-agent request returned HTTP `200` for the homepage.
+- Production safety checks found no provider environment variables in the Vercel production
+  environment, no public `/api/run`, `/api/execute`, or `/api/provider` route, and no absolute
+  private filesystem paths, bearer tokens, or provider credentials in representative responses.
+- The existing CLI trace export was run once against the Docker fixture and wrote a non-empty
+  `7,448`-byte JSON export to a temporary path, which was removed immediately afterward.
+- Covered only by static/contract checks: an interactive browser session was unavailable in this
+  environment, so keyboard traversal, reduced-motion behavior, browser console errors, and
+  visual responsive inspection are not claimed as manually verified. The CSS/source review did
+  verify focus-visible handling and reduced-motion rules are present.

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-07T19:45:10.789Z",
+  "generatedAt": "2026-09-07T20:38:38.722Z",
   "provenance": {
     "kind": "sanitized-local-artifacts",
-    "sourceCommit": "8ed60fb5d1ed72a8ded4e5e78245fe51699718ea",
+    "sourceCommit": "ebf85429b8fbe9e76f09cc44273a233ccc3b8b72",
     "runCount": 32,
     "experimentCount": 12,
     "note": "Generated from persisted MorphScope traces; hosted mode is read-only."
@@ -7898,6 +7898,44 @@
       "patch": "diff --git a/src/greeting.js b/src/greeting.js\nindex ad1c554..61d776b 100644\n--- a/src/greeting.js\n+++ b/src/greeting.js\n@@ -1,3 +1,3 @@\n export function formatGreeting(name) {\n-  return `Hello ${name}`;\n+  return `Hello ${name}!`;\n }\n"
     }
   ],
+  "tasks": [
+    {
+      "id": "adversarial-sandbox",
+      "repository": "benchmarks/fixtures/adversarial",
+      "commit": "fixture-v1",
+      "issue": "Verify that hostile fixture output and task credentials remain inside the controlled sandbox boundary.",
+      "setup": "node --version",
+      "evaluation": "node test/adversarial.test.js",
+      "tags": ["fixture", "security", "sandbox"]
+    },
+    {
+      "id": "greeting-punctuation",
+      "repository": "benchmarks/fixtures/buggy-greeting",
+      "commit": "fixture-v1",
+      "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+      "setup": "node --version",
+      "evaluation": "npm test",
+      "tags": ["fixture", "javascript"]
+    },
+    {
+      "id": "python-slug",
+      "repository": "benchmarks/fixtures/python-slug",
+      "commit": "fixture-v1",
+      "issue": "Normalize the slug returned by normalize_slug without changing its trimming behavior.",
+      "setup": "python3 --version",
+      "evaluation": "python3 -m unittest discover -s test",
+      "tags": ["fixture", "python", "bug-fix"]
+    },
+    {
+      "id": "ts-labels",
+      "repository": "benchmarks/fixtures/ts-labels",
+      "commit": "fixture-v1",
+      "issue": "Normalize the label returned by formatLabel without changing its surrounding whitespace contract.",
+      "setup": "tsc --version",
+      "evaluation": "tsc --noEmit",
+      "tags": ["fixture", "typescript", "sparse-edit"]
+    }
+  ],
   "experiments": [
     {
       "experiment": {
@@ -7910,7 +7948,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -7944,7 +7986,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -7978,7 +8024,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8012,7 +8062,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8048,7 +8102,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8084,7 +8142,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8120,7 +8182,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8156,7 +8222,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8204,7 +8274,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8252,7 +8326,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8294,7 +8372,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
@@ -8337,7 +8419,11 @@
       "task": {
         "id": "greeting-punctuation",
         "repository": "benchmarks/fixtures/buggy-greeting",
-        "commit": "fixture-v1"
+        "commit": "fixture-v1",
+        "issue": "Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.",
+        "setup": "node --version",
+        "evaluation": "npm test",
+        "tags": ["fixture", "javascript"]
       },
       "fixedVariables": {
         "reasoningProvider": "local",
