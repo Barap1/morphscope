@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 7
+## Current scope: CHECKPOINT 8
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -55,7 +55,10 @@ pnpm dev:web
 Use the overview for the current evidence field, `/experiments` for configuration
 matrices and recorded outcomes, `/tasks/<task-id>` for task-scoped runs, and
 `/runs/<run-id>` for replayable trace, validation, and patch evidence. Empty states stay
-explicit when the local trace store has no records.
+explicit when the local trace store has no records. The `/compare` route selects two
+persisted runs, constrains them to the same task by default, and shows aligned timelines,
+first-divergence markers, measured deltas, technical span details, patches, and
+verification outcomes. The experiment detail page links directly into a recorded pair.
 
 To run the real TypeScript fixture from a clean disposable workspace:
 
@@ -65,7 +68,7 @@ pnpm morphscope run benchmarks/tasks/example.yaml --config baseline
 
 The command writes a structured `run.json`, SQLite trace, and content-addressed Git diff
 under `.morphscope/runs/<run-id>/`. The baseline is intentionally deterministic and
-offline for this checkpoint; it exercises real search, read, edit, setup, and evaluation
+offline for the local baseline path; it exercises real search, read, edit, setup, and evaluation
 commands without claiming model-provider results.
 
 The Morph technical-spike boundary is implemented and live validation is credential-gated.

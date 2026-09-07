@@ -41,6 +41,11 @@ function ExperimentRecordView({ experiment }: { experiment: ExperimentRecord }) 
           <Link className="ui-button ui-button-quiet" href="/experiments">
             <ArrowLeft size={15} weight="bold" aria-hidden /> All experiments
           </Link>
+          {experiment.runs.length >= 2 ? (
+            <Link className="ui-button ui-button-secondary" href={compareHref(experiment.runs)}>
+              <Scales size={15} weight="bold" aria-hidden /> Compare runs
+            </Link>
+          ) : null}
           <StatusBadge
             status={experimentStatus(experiment)}
             label={experiment.experiment.status ?? "recorded"}
@@ -282,6 +287,11 @@ function formatCost(value: number): string {
     currency: "USD",
     maximumFractionDigits: 4,
   }).format(value);
+}
+
+function compareHref(runs: StoredRun[]): string {
+  const [left, right] = runs;
+  return `/compare?left=${encodeURIComponent(left.run.id)}&right=${encodeURIComponent(right.run.id)}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
