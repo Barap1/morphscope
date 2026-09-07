@@ -246,6 +246,10 @@ export function loadExperiment(id: string): ExperimentRecord | null {
 }
 
 export function loadTaskSummary(id: string): TaskSummary | null {
+  if (isPublishedDashboard()) {
+    const publishedTask = loadPublishedTaskSummary(id);
+    if (publishedTask) return publishedTask;
+  }
   const taskFiles = findFiles(join(repoRoot(), "benchmarks", "tasks"), undefined).filter((file) =>
     /\.(?:yaml|yml|json)$/u.test(file),
   );
@@ -294,6 +298,32 @@ function loadPublishedRuns(): StoredRun[] {
     .map((payload) => readPublishedRun(payload))
     .filter((run): run is StoredRun => run !== null)
     .sort((left, right) => timestamp(right) - timestamp(left));
+}
+
+function loadPublishedTaskSummary(id: string): TaskSummary | null {
+  const payload: unknown = publishedData;
+  if (!isRecord(payload) || !Array.isArray(payload.tasks)) return null;
+  const task = payload.tasks.find(
+    (value): value is Record<string, unknown> =>
+      isRecord(value) && typeof value.id === "string" && value.id === id,
+  );
+  if (!task) return null;
+  const repository = stringValue(task.repository);
+  const commit = stringValue(task.commit);
+  const issue = stringValue(task.issue);
+  const setup = stringValue(task.setup);
+  const evaluation = stringValue(task.evaluation);
+  if (!repository || !commit || !issue || !setup || !evaluation) return null;
+  return {
+    id,
+    repository,
+    commit,
+    issue,
+    setup,
+    evaluation,
+    tags: arrayOfStrings(task.tags),
+    sourceFile: "published://morphscope-tasks",
+  };
 }
 
 function readPublishedRun(value: unknown): StoredRun | null {

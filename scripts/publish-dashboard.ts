@@ -57,6 +57,12 @@ if (missingRunIds.length > 0) {
 if (runsById.size < 2)
   throw new Error("at least two persisted runs are required for hosted comparison");
 
+const publishedTasks = new Map<string, JsonRecord>();
+for (const publishedRun of runsById.values()) {
+  const run = isRecord(publishedRun.run) ? publishedRun.run : null;
+  const taskId = run && typeof run.taskId === "string" ? run.taskId : null;
+  if (taskId) publishedTasks.set(taskId, { id: taskId, ...taskDefinition(taskId) });
+}
 const experiments = findFiles(join(morphScopeRoot, "experiments"), "experiment.json")
   .map(readJson)
   .filter(
@@ -65,8 +71,10 @@ const experiments = findFiles(join(morphScopeRoot, "experiments"), "experiment.j
       isRecord(value.experiment) &&
       allowlistedConfigurations(value.configurations).length > 0,
   )
-  .map((value) =>
-    sanitize({
+  .map((value) => {
+    const task = projectTask(value.task);
+    if (typeof task.id === "string") publishedTasks.set(task.id, sanitize(task));
+    return sanitize({
       experiment: projectRecord(value.experiment, [
         "id",
         "name",
@@ -74,7 +82,7 @@ const experiments = findFiles(join(morphScopeRoot, "experiments"), "experiment.j
         "sourceCommit",
         "status",
       ]),
-      task: projectRecord(value.task, ["id", "repository", "commit", "tags"]),
+      task,
       ...(isRecord(value.fixedVariables)
         ? { fixedVariables: projectFixedVariables(value.fixedVariables) }
         : {}),
@@ -95,8 +103,8 @@ const experiments = findFiles(join(morphScopeRoot, "experiments"), "experiment.j
           ...(search ? { search } : {}),
         };
       }),
-    }),
-  );
+    });
+  });
 
 const sourceCommit = execFileSync("git", ["rev-parse", "HEAD"], {
   cwd: repositoryRoot,
@@ -117,6 +125,9 @@ writeFileSync(
         note: "Generated from persisted MorphScope traces; hosted mode is read-only.",
       },
       runs: [...runsById.values()].sort((left, right) => timestamp(right) - timestamp(left)),
+      tasks: [...publishedTasks.values()].sort((left, right) =>
+        String(left.id).localeCompare(String(right.id)),
+      ),
       experiments,
     },
     null,
@@ -352,6 +363,73 @@ function projectSearch(value: unknown): JsonRecord | undefined {
   };
 }
 
+function projectTask(value: unknown): JsonRecord {
+  const task = projectRecord(value, [
+    "id",
+    "repository",
+    "commit",
+    "issue",
+    "setup",
+    "evaluation",
+    "tags",
+  ]);
+  if (typeof task.id !== "string") return task;
+  return { ...taskDefinition(task.id), ...task };
+}
+
+function taskDefinition(taskId: string): JsonRecord {
+  const taskRoot = join(repositoryRoot, "benchmarks", "tasks");
+  let entries: Array<{ name: string; isFile(): boolean }>;
+  try {
+    entries = readdirSync(taskRoot, { withFileTypes: true, encoding: "utf8" });
+  } catch {
+    return { id: taskId };
+  }
+  for (const entry of entries) {
+    if (!entry.isFile() || !/\.(?:yaml|yml|json)$/u.test(entry.name)) continue;
+    const definition = readTaskDefinition(join(taskRoot, entry.name));
+    if (definition?.id === taskId) return definition;
+  }
+  return { id: taskId };
+}
+
+function readTaskDefinition(sourceFile: string): JsonRecord | null {
+  const payload = readJson(sourceFile);
+  if (payload && typeof payload.id === "string") {
+    return projectRecord(payload, [
+      "id",
+      "repository",
+      "commit",
+      "issue",
+      "setup",
+      "evaluation",
+      "tags",
+    ]);
+  }
+  let source: string;
+  try {
+    source = readFileSync(sourceFile, "utf8");
+  } catch {
+    return null;
+  }
+  const value = (key: string) => {
+    const match = source.match(new RegExp(`^${key}:\\s*(.+)$`, "mu"));
+    return match ? unquote(match[1].trim()) : undefined;
+  };
+  const id = value("id");
+  if (!id) return null;
+  const tags = [...source.matchAll(/^\s+-\s+(.+)$/gmu)].map((match) => unquote(match[1].trim()));
+  return {
+    id,
+    ...(value("repository") ? { repository: value("repository") } : {}),
+    ...(value("commit") ? { commit: value("commit") } : {}),
+    ...(value("issue") ? { issue: value("issue") } : {}),
+    ...(value("setup") ? { setup: value("setup") } : {}),
+    ...(value("evaluation") ? { evaluation: value("evaluation") } : {}),
+    ...(tags.length > 0 ? { tags } : {}),
+  };
+}
+
 function projectTrace(value: unknown): JsonRecord | undefined {
   if (!isRecord(value)) return undefined;
   return {
@@ -507,4 +585,12 @@ function timestamp(value: JsonRecord): number {
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function unquote(value: string): string {
+  return value.startsWith('"') && value.endsWith('"')
+    ? value.slice(1, -1)
+    : value.startsWith("'") && value.endsWith("'")
+      ? value.slice(1, -1)
+      : value;
 }
