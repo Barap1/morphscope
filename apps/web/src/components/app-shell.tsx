@@ -254,7 +254,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </nav>
           </div>
           <div className="header-actions">
-            <CommandMenu />
+            <CommandMenu onOpen={() => setMobileOpen(false)} />
             <span className="header-divider" aria-hidden />
             <ThemeToggle />
             <div className="header-identity" role="group" aria-label="Local workspace identity">

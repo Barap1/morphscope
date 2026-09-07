@@ -39,7 +39,7 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
   }
 }
 
-export function CommandMenu() {
+export function CommandMenu({ onOpen }: { onOpen?: () => void }) {
   const pathname = usePathname() ?? "/";
   const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -62,10 +62,11 @@ export function CommandMenu() {
   const resolvedActiveIndex = Math.min(activeIndex, Math.max(filteredItems.length - 1, 0));
 
   const openMenu = useCallback(() => {
+    onOpen?.();
     setQuery("");
     setActiveIndex(0);
     setOpen(true);
-  }, []);
+  }, [onOpen]);
 
   const closeMenu = useCallback(() => {
     setOpen(false);
