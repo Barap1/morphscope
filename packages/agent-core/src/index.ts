@@ -1,6 +1,17 @@
 import type { ResourceLimits, TerminalState } from "@morphscope/schemas";
 import type { TraceWriter } from "@morphscope/tracing";
 
+export {
+  ADAPTIVE_POLICY_VERSION,
+  decideCompaction,
+  decideEdit,
+  decideSearch,
+  type CompactionRoutingFeatures,
+  type EditRoutingFeatures,
+  type RoutingDecision,
+  type SearchRoutingFeatures,
+} from "./controller.js";
+
 export type BaselineAction =
   | { type: "list_files"; path?: string }
   | { type: "search"; query: string; path?: string; maxResults?: number }

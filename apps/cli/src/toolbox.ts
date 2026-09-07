@@ -6,6 +6,13 @@ export type SearchOverride = (
   options?: { path?: string; maxResults?: number },
 ) => string;
 
+export type ReplaceOverride = (input: {
+  path: string;
+  search: string;
+  replacement: string;
+  expectedOccurrences?: number;
+}) => { path: string; replacements: number };
+
 export function changedFilesFromPlan(plan: BaselinePlan): string[] {
   return [
     ...new Set(
@@ -21,6 +28,7 @@ export function changedFilesFromPlan(plan: BaselinePlan): string[] {
 export function createToolbox(
   workspace: LocalWorkspace,
   searchOverride?: SearchOverride,
+  replaceOverride?: ReplaceOverride,
 ): BaselineToolbox {
   return {
     listFiles: (path?: string) => workspace.listFiles(path),
@@ -41,7 +49,9 @@ export function createToolbox(
       return lines.slice(start - 1, end).join("\n");
     },
     replaceFile: (input: { path: string; search: string; replacement: string }) =>
-      workspace.replaceFile(input.path, input.search, input.replacement),
+      replaceOverride
+        ? replaceOverride(input)
+        : workspace.replaceFile(input.path, input.search, input.replacement),
     applyPatch: (patch: string) => workspace.applyPatch(patch),
     runCommand: (command: string) => workspace.runSetup(command),
     gitDiff: () => workspace.collectDiff().diff,

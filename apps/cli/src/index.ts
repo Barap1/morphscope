@@ -11,6 +11,7 @@ import { TraceWriter, redactText } from "@morphscope/tracing";
 import { persistedEvaluation } from "./persistence.js";
 import { runEditStudy } from "./edit-study.js";
 import { runContextStudy } from "./context-study.js";
+import { runAdaptiveStudy } from "./adaptive-study.js";
 import { runSearchStudy } from "./search-study.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
 import { changedFilesFromPlan, createToolbox } from "./toolbox.js";
@@ -70,6 +71,7 @@ async function main(): Promise<void> {
   if (argv[0] === "experiment") {
     if (argv[2] === "edit-study") await runEditStudy(argv);
     else if (argv[2] === "context-study") await runContextStudy(argv);
+    else if (argv[2] === "adaptive-study") await runAdaptiveStudy(argv);
     else await runSearchStudy(argv);
     return;
   }

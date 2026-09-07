@@ -161,6 +161,7 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
       </div>
 
       {storedRun.context ? <ContextEvidence context={storedRun.context} /> : null}
+      {storedRun.routing ? <RoutingEvidence routing={storedRun.routing} /> : null}
 
       <div className="split-grid data-section-gap">
         <Panel className="data-panel">
@@ -316,6 +317,49 @@ function ContextEvidence({ context }: { context: NonNullable<StoredRun["context"
           </details>
         </div>
       ) : null}
+    </Panel>
+  );
+}
+
+function RoutingEvidence({ routing }: { routing: NonNullable<StoredRun["routing"]> }) {
+  return (
+    <Panel className="data-panel routing-evidence-panel data-section-gap">
+      <div className="section-heading">
+        <div>
+          <span className="section-label">Adaptive controller</span>
+          <h2>Why each route was selected</h2>
+        </div>
+        <Badge variant="accent">{routing.policyVersion}</Badge>
+      </div>
+      <TableShell caption="Persisted adaptive routing decisions">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Route</th>
+              <th scope="col">Selected</th>
+              <th scope="col">Reason</th>
+              <th scope="col">Features</th>
+            </tr>
+          </thead>
+          <tbody>
+            {routing.decisions.map((decision) => (
+              <tr key={decision.route}>
+                <td className="table-code">{decision.route}</td>
+                <td>
+                  <Badge variant="steel">{decision.selected}</Badge>
+                </td>
+                <td>{decision.reason}</td>
+                <td>
+                  <details className="routing-features-details">
+                    <summary>inspect</summary>
+                    <CodeBlock language="json" code={JSON.stringify(decision.features, null, 2)} />
+                  </details>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableShell>
     </Panel>
   );
 }

@@ -120,11 +120,26 @@ export type ContextRecord = {
   profiles: ContextProfileRecord[];
 };
 
+export type RoutingDecisionRecord = {
+  route: string;
+  selected: string;
+  policyVersion: string;
+  reason: string;
+  features: Record<string, boolean | number | string | null>;
+};
+
+export type RoutingRecord = {
+  policyVersion: string;
+  decisions: RoutingDecisionRecord[];
+  contextProfile: Record<string, unknown> | null;
+};
+
 export type StoredRun = {
   run: Run;
   evaluation: EvaluationRecord | null;
   edit: EditRecord | null;
   context: ContextRecord | null;
+  routing: RoutingRecord | null;
   trace: { spans: TraceSpanRecord[]; events: TraceEventRecord[] };
   search: Record<string, unknown> | null;
   patch: string | null;
@@ -159,6 +174,7 @@ export type ExperimentManifest = {
     searchProvider?: string;
     editProvider?: string;
     contextProvider?: string;
+    routingPolicy?: string;
     runId?: string;
     terminalState?: string;
     search?: Record<string, unknown> | null;
@@ -253,6 +269,7 @@ function readStoredRun(sourceFile: string): StoredRun | null {
     evaluation: isRecord(payload.evaluation) ? (payload.evaluation as EvaluationRecord) : null,
     edit: isRecord(payload.edit) ? (payload.edit as EditRecord) : null,
     context: isRecord(payload.context) ? (payload.context as ContextRecord) : null,
+    routing: isRecord(payload.routing) ? (payload.routing as RoutingRecord) : null,
     trace: {
       spans: Array.isArray(trace.spans) ? (trace.spans as TraceSpanRecord[]) : [],
       events: Array.isArray(trace.events) ? (trace.events as TraceEventRecord[]) : [],
@@ -285,6 +302,9 @@ function readExperiment(
               : {}),
             ...(typeof configuration.contextProvider === "string"
               ? { contextProvider: configuration.contextProvider }
+              : {}),
+            ...(typeof configuration.routingPolicy === "string"
+              ? { routingPolicy: configuration.routingPolicy }
               : {}),
             ...(typeof configuration.runId === "string" ? { runId: configuration.runId } : {}),
             ...(typeof configuration.terminalState === "string"

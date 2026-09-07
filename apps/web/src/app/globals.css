@@ -2318,6 +2318,26 @@ button:disabled {
   border-radius: 0 0 8px 8px;
 }
 
+.routing-evidence-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.routing-features-details summary {
+  width: fit-content;
+  color: var(--faint);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.routing-features-details .ui-code-block {
+  min-width: 240px;
+  margin-top: 8px;
+  max-height: 240px;
+  overflow: auto;
+}
+
 .edit-evidence-heading {
   align-items: center;
   justify-content: space-between;

@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 10
+## Current scope: CHECKPOINT 11
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -93,6 +93,18 @@ The command writes a structured `run.json`, SQLite trace, and content-addressed 
 under `.morphscope/runs/<run-id>/`. The baseline is intentionally deterministic and
 offline for the local baseline path; it exercises real search, read, edit, setup, and evaluation
 commands without claiming model-provider results.
+
+The auditable adaptive controller runs through the same fixture, sandbox, evaluation, and
+trace path:
+
+```bash
+pnpm morphscope experiment run adaptive-study
+```
+
+`adaptive-rules-v1` persists search, edit, and compaction features, selected routes, policy
+version, and reasons in the run artifact and UI. The default fixture stays local and selects
+raw search, deterministic editing, and no compaction; use `--include-morph` only for a
+deliberate provider-backed route when the decision features select one.
 
 The Morph technical-spike boundary is implemented and live validation is credential-gated.
 After setting `MORPH_API_KEY` in local environment configuration, run:

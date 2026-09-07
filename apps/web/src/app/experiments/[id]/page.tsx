@@ -178,6 +178,7 @@ function ConfigurationRow({
         {configuration.searchProvider ??
           configuration.editProvider ??
           configuration.contextProvider ??
+          configuration.routingPolicy ??
           "local baseline"}
       </td>
       <td>
