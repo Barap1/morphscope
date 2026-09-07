@@ -25,12 +25,16 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 3
+## Current scope: CHECKPOINT 4
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
-SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, and a
-deterministic offline baseline runner. The web shell remains honest about the fact that
-dashboard pages are not yet connected to these persisted runs.
+SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
+deterministic offline baseline runner, and credential-gated provider adapters. Morph
+WarpGrep, Fast Apply, and Compact use the documented OpenAI-compatible HTTP contracts.
+Groq is the reasoning provider with `openai/gpt-oss-120b` as the explicit default.
+Provider metadata records model identity, status, latency, usage when supplied, and
+classified provider failures. Live provider artifacts stay under the ignored
+`.morphscope/` directory.
 
 To work on the web shell:
 
@@ -39,8 +43,8 @@ pnpm dev:web
 pnpm build:web
 ```
 
-The shell can be inspected locally; the CP3 runner is exercised through the CLI while
-dashboard integration remains a later checkpoint.
+The shell can be inspected locally; the offline baseline runner is exercised through the
+CLI while dashboard integration remains a later checkpoint.
 
 To run the real TypeScript fixture from a clean disposable workspace:
 
@@ -53,7 +57,7 @@ under `.morphscope/runs/<run-id>/`. The baseline is intentionally deterministic 
 offline for this checkpoint; it exercises real search, read, edit, setup, and evaluation
 commands without claiming model-provider results.
 
-The Morph technical-spike boundary is implemented but live validation is credential-gated.
+The Morph technical-spike boundary is implemented and live validation is credential-gated.
 After setting `MORPH_API_KEY` in local environment configuration, run:
 
 ```bash
@@ -65,8 +69,19 @@ pnpm morphscope:morph-spike \
 ```
 
 The spike records provider metadata, trace spans, hashes, diff, and compacted context under
-`.morphscope/morph-spike/`. No live provider result is claimed until that command completes
-with a real credential.
+`.morphscope/morph-spike/`. Use `--only warpgrep`, `--only fast-apply`, or `--only compact`
+for a single controlled capability check. A WarpGrep result records whether contexts came
+from the provider finish payload or an actual local read fallback when the provider omits a
+usable final payload.
+
+For the reasoning provider smoke:
+
+```bash
+pnpm morphscope:groq-smoke
+```
+
+The smoke records only provider/model identity, status, latency, usage, rate-limit metadata,
+and a response hash; it does not persist the provider response text.
 
 No benchmark results or experimental findings are claimed yet. All future results must
 come from real repository execution and be accompanied by their methodology and limits.

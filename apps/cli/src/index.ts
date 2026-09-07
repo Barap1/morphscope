@@ -26,7 +26,7 @@ function parseArgs(argv: string[]): CliOptions {
     else throw new Error(`unknown option: ${argv[index]}`);
   }
   if (config !== "baseline")
-    throw new Error(`unsupported config: ${config}; CP3 provides baseline`);
+    throw new Error(`unsupported config: ${config}; the current runner provides baseline`);
   return { taskPath: resolve(argv[1]), config, outputPath };
 }
 

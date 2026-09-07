@@ -11,6 +11,7 @@
     "dev:web": "pnpm --filter @morphscope/web dev",
     "morphscope": "tsx apps/cli/src/index.ts",
     "morphscope:morph-spike": "tsx apps/cli/src/morph-spike.ts",
+    "morphscope:groq-smoke": "tsx apps/cli/src/groq-smoke.ts",
     "build": "pnpm --filter @morphscope/web build",
     "build:web": "pnpm --filter @morphscope/web build",
     "workspace:verify": "node scripts/verify-workspace.ts",

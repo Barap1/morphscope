@@ -9,12 +9,24 @@ const sensitiveKeyPattern =
   /(api[-_]?key|access[-_]?token|auth|authorization|credential|password|private[-_]?key|secret|token)/i;
 const secretValuePatterns = [
   /\bsk-[A-Za-z0-9_-]{16,}\b/g,
+  /\bgsk_[A-Za-z0-9_-]{20,}\b/g,
   /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/g,
   /\bgithub_pat_[A-Za-z0-9_]{20,}\b/g,
   /\b(?:morph|ms)_[A-Za-z0-9_-]{20,}\b/g,
   /\bBearer\s+[A-Za-z0-9._~+/-]{12,}/gi,
-  /\b(?:MORPH_API_KEY|OPENAI_API_KEY|GITHUB_TOKEN|AWS_SECRET_ACCESS_KEY)\s*=\s*[^\s,;]+/g,
+  /\b(?:MORPH_API_KEY|GROQ_API_KEY|OPENAI_API_KEY|GITHUB_TOKEN|AWS_SECRET_ACCESS_KEY)\s*=\s*[^\s,;]+/g,
 ];
+
+const nonSecretMetricKeys = new Set([
+  "tokenUsage",
+  "inputTokens",
+  "outputTokens",
+  "totalTokens",
+  "reasoningTokens",
+  "limitTokens",
+  "remainingTokens",
+  "resetTokensMs",
+]);
 
 export function redactText(input: string): RedactionResult {
   let value = input;
@@ -41,7 +53,10 @@ export function redactSecrets<T>(input: T): T {
 
   const output: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(input)) {
-    output[key] = sensitiveKeyPattern.test(key) ? REDACTED : redactSecrets(value);
+    output[key] =
+      nonSecretMetricKeys.has(key) || !sensitiveKeyPattern.test(key)
+        ? redactSecrets(value)
+        : REDACTED;
   }
   return output as T;
 }

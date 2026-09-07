@@ -72,5 +72,17 @@ describe("TraceWriter", () => {
         nested: { token: "[REDACTED]" },
       },
     );
+    expect(
+      redactSecrets({
+        tokenUsage: { inputTokens: 12, outputTokens: 7, totalTokens: 19 },
+        rateLimit: { remainingTokens: 200, resetTokensMs: 1_000 },
+      }),
+    ).toEqual({
+      tokenUsage: { inputTokens: 12, outputTokens: 7, totalTokens: 19 },
+      rateLimit: { remainingTokens: 200, resetTokensMs: 1_000 },
+    });
+    expect(redactSecrets("GROQ_API_KEY=gsk_123456789012345678901234")).toBe(
+      "GROQ_API_KEY=[REDACTED]",
+    );
   });
 });

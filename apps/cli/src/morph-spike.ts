@@ -12,6 +12,7 @@ type SpikeOptions = {
   instructions: string;
   codeEdit: string;
   query: string;
+  only: "all" | "warpgrep" | "fast-apply" | "compact";
   output?: string;
 };
 
@@ -28,10 +29,14 @@ function parseArgs(argv: string[]): SpikeOptions {
   const search = values.get("search");
   const instructions = values.get("instructions");
   const codeEdit = values.get("code-edit");
+  const only = values.get("only") ?? "all";
   if (!file || !search || !instructions || !codeEdit) {
     throw new Error(
-      "usage: pnpm morphscope:morph-spike --file <path> --search <query> --instructions <text> --code-edit <snippet> [--repo <dir>] [--query <text>]",
+      "usage: pnpm morphscope:morph-spike --file <path> --search <query> --instructions <text> --code-edit <snippet> [--repo <dir>] [--query <text>] [--only all|warpgrep|fast-apply|compact]",
     );
+  }
+  if (!["all", "warpgrep", "fast-apply", "compact"].includes(only)) {
+    throw new Error("--only must be all, warpgrep, fast-apply, or compact");
   }
   return {
     repoRoot: resolve(values.get("repo") ?? process.cwd()),
@@ -40,6 +45,7 @@ function parseArgs(argv: string[]): SpikeOptions {
     instructions,
     codeEdit,
     query: values.get("query") ?? search,
+    only: only as SpikeOptions["only"],
     output: values.get("output"),
   };
 }
@@ -75,32 +81,49 @@ async function main(): Promise<void> {
     const filePath = safeFilePath(options.repoRoot, options.file);
     const originalCode = readFileSync(filePath, "utf8");
     const client = new MorphClient({ trace });
-    const warpGrep = await client.warpGrep({
-      repoRoot: options.repoRoot,
-      searchTerm: options.search,
-    });
-    const fastApply = await client.fastApply({
-      originalCode,
-      codeEdit: options.codeEdit,
-      instructions: options.instructions,
-    });
-    const compact = await client.compact({
-      input: JSON.stringify({ search: options.search, contexts: warpGrep.contexts }, null, 2),
-      query: options.query,
-      preserveRecent: 3,
-    });
-    const diffArtifact = artifacts.put({
-      content: fastApply.udiff ?? "",
-      mimeType: "text/vnd.git-diff",
-      redactionStatus: "redacted-before-persist",
-      producerSpanId: rootSpan.spanId,
-    });
-    rootSpan.update({ outputArtifactIds: [diffArtifact.sha256] });
+    const warpGrep =
+      options.only === "all" || options.only === "warpgrep"
+        ? await client.warpGrep({
+            repoRoot: options.repoRoot,
+            searchTerm: options.search,
+          })
+        : undefined;
+    const fastApply =
+      options.only === "all" || options.only === "fast-apply"
+        ? await client.fastApply({
+            originalCode,
+            codeEdit: options.codeEdit,
+            instructions: options.instructions,
+          })
+        : undefined;
+    const compact =
+      options.only === "all" || options.only === "compact"
+        ? await client.compact({
+            input: JSON.stringify(
+              { search: options.search, contexts: warpGrep?.contexts ?? [] },
+              null,
+              2,
+            ),
+            query: options.query,
+            preserveRecent: 3,
+          })
+        : undefined;
+    const diffArtifact = fastApply
+      ? artifacts.put({
+          content: fastApply.udiff ?? "",
+          mimeType: "text/vnd.git-diff",
+          redactionStatus: "redacted-before-persist",
+          producerSpanId: rootSpan.spanId,
+        })
+      : undefined;
+    if (diffArtifact) rootSpan.update({ outputArtifactIds: [diffArtifact.sha256] });
     rootSpan.event("morph_spike_completed", {
-      warpToolCalls: warpGrep.toolCalls,
-      fastApplySuccess: fastApply.success,
-      compactBeforeBytes: compact.beforeBytes,
-      compactAfterBytes: compact.afterBytes,
+      capability: options.only,
+      ...(warpGrep ? { warpToolCalls: warpGrep.toolCalls } : {}),
+      ...(fastApply ? { fastApplySuccess: fastApply.success } : {}),
+      ...(compact
+        ? { compactBeforeBytes: compact.beforeBytes, compactAfterBytes: compact.afterBytes }
+        : {}),
     });
     rootSpan.end("ok");
     const result = redactSecrets({
@@ -108,17 +131,22 @@ async function main(): Promise<void> {
       traceId,
       repository: options.repoRoot,
       file: options.file,
-      warpGrep,
-      fastApply: {
-        success: fastApply.success,
-        originalSha256: fastApply.originalSha256,
-        finalSha256: fastApply.finalSha256,
-        changes: fastApply.changes,
-        udiff: fastApply.udiff,
-        metadata: fastApply.metadata,
-      },
-      compact,
-      diffArtifact,
+      capability: options.only,
+      ...(warpGrep ? { warpGrep } : {}),
+      ...(fastApply
+        ? {
+            fastApply: {
+              success: fastApply.success,
+              originalSha256: fastApply.originalSha256,
+              finalSha256: fastApply.finalSha256,
+              changes: fastApply.changes,
+              udiff: fastApply.udiff,
+              metadata: fastApply.metadata,
+            },
+          }
+        : {}),
+      ...(compact ? { compact } : {}),
+      ...(diffArtifact ? { diffArtifact } : {}),
       trace: trace.read(),
     });
     writeFileSync(join(outputRoot, "result.json"), JSON.stringify(result, null, 2));

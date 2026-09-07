@@ -22,7 +22,11 @@ The current documented contracts are:
 The implementation records status, latency, model, response ID, and provider-reported
 usage when present. It treats missing credentials, timeouts, non-2xx responses, and
 malformed payloads as explicit provider errors. A live successful request is intentionally
-not claimed until `MORPH_API_KEY` is supplied.
+not claimed until MORPH_API_KEY is supplied. The live CP4 WarpGrep response used the
+documented local tool-call flow but did not return a usable final context payload. The
+adapter therefore preserves any actual local read output as an explicitly labeled
+local_read_fallback context instead of inventing a provider result; the result metadata
+keeps this deviation visible.
 
 References:
 

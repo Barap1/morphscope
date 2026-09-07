@@ -2,7 +2,13 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MissingMorphCredentialError, MorphClient, MorphProviderError } from "./index.js";
+import {
+  GroqClient,
+  MissingGroqCredentialError,
+  MissingMorphCredentialError,
+  MorphClient,
+  MorphProviderError,
+} from "./index.js";
 import type { Span } from "@morphscope/schemas";
 import type { TracePersistence, TraceSnapshot } from "@morphscope/tracing";
 import { TraceWriter } from "@morphscope/tracing";
@@ -166,6 +172,190 @@ describe("MorphClient", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it("resolves documented WarpGrep finish file locations into real contexts", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-finish-test-"));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, "source.ts"),
+      "const first = true;\nconst needle = true;\n",
+      "utf8",
+    );
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        choices: [
+          {
+            message: {
+              content: "",
+              tool_calls: [
+                {
+                  id: "finish-1",
+                  type: "function",
+                  function: {
+                    name: "finish",
+                    arguments: JSON.stringify({
+                      files: [{ path: "source.ts", lines: "2-2" }],
+                      summary: "found the needle",
+                    }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      }),
+    );
+    const result = await new MorphClient({ apiKey: "test-key", fetchImpl }).warpGrep({
+      repoRoot: directory,
+      searchTerm: "Find needle",
+    });
+    expect(result.contexts).toEqual([{ file: "source.ts", content: "const needle = true;" }]);
+  });
+
+  it("resolves XML finish file locations returned in assistant content", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-xml-finish-test-"));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, "source.ts"),
+      "const first = true;\nconst needle = true;\n",
+      "utf8",
+    );
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        choices: [
+          {
+            message: {
+              content:
+                "<think>Done.</think><finish><file><path>source.ts</path><lines>2-2</lines></file></finish>",
+            },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      }),
+    );
+    const result = await new MorphClient({ apiKey: "test-key", fetchImpl }).warpGrep({
+      repoRoot: directory,
+      searchTerm: "Find needle",
+    });
+    expect(result.contexts).toEqual([{ file: "source.ts", content: "const needle = true;" }]);
+  });
+
+  it("resolves XML finish locations nested in a finish tool answer", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-nested-finish-test-"));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, "source.ts"),
+      "const first = true;\nconst needle = true;\n",
+      "utf8",
+    );
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        choices: [
+          {
+            message: {
+              content: "",
+              tool_calls: [
+                {
+                  id: "finish-1",
+                  type: "function",
+                  function: {
+                    name: "finish",
+                    arguments: JSON.stringify({
+                      answer:
+                        "<finish><file><file_path>source.ts</file_path><lines>2-2</lines></file></finish>",
+                    }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      }),
+    );
+    const result = await new MorphClient({ apiKey: "test-key", fetchImpl }).warpGrep({
+      repoRoot: directory,
+      searchTerm: "Find needle",
+    });
+    expect(result.contexts).toEqual([{ file: "source.ts", content: "const needle = true;" }]);
+  });
+
+  it("resolves nested JSON finish locations and array-form content", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-json-finish-test-"));
+    temporaryDirectories.push(directory);
+    writeFileSync(
+      join(directory, "source.ts"),
+      "const first = true;\nconst needle = true;\n",
+      "utf8",
+    );
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        choices: [
+          {
+            message: {
+              content: [
+                {
+                  type: "text",
+                  text: JSON.stringify({
+                    result: { files: [{ file_path: "source.ts", lines: "2-2" }] },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      }),
+    );
+    const result = await new MorphClient({ apiKey: "test-key", fetchImpl }).warpGrep({
+      repoRoot: directory,
+      searchTerm: "Find needle",
+    });
+    expect(result.contexts).toEqual([{ file: "source.ts", content: "const needle = true;" }]);
+  });
+
+  it("keeps a real local read as an explicit fallback when the provider omits finish output", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-read-fallback-test-"));
+    temporaryDirectories.push(directory);
+    writeFileSync(join(directory, "source.ts"), "const needle = true;\n", "utf8");
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        response({
+          choices: [
+            {
+              message: {
+                content: "",
+                tool_calls: [
+                  {
+                    id: "read-1",
+                    type: "function",
+                    function: {
+                      name: "read",
+                      arguments: JSON.stringify({ path: "source.ts", lines: "1-1" }),
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        response({
+          choices: [{ message: { content: "Search completed." } }],
+          usage: { prompt_tokens: 20, completion_tokens: 5, total_tokens: 25 },
+        }),
+      );
+    const result = await new MorphClient({ apiKey: "test-key", fetchImpl }).warpGrep({
+      repoRoot: directory,
+      searchTerm: "Find needle",
+    });
+    expect(result.contextSource).toBe("local_read_fallback");
+    expect(result.contexts).toEqual([{ file: "source.ts", content: "const needle = true;" }]);
+  });
+
   it("classifies malformed responses and aborts timed out calls", async () => {
     const malformed = vi
       .fn<typeof fetch>()
@@ -205,6 +395,121 @@ describe("MorphClient", () => {
     const span = [...persistence.spans.values()][0];
     expect(span?.type).toBe("provider.morph.compact");
     expect(span?.status).toBe("ok");
+    expect(persistence.events).toHaveLength(1);
+  });
+});
+
+describe("GroqClient", () => {
+  it("uses the approved default model and records provider metadata", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response(
+        {
+          id: "groq-chat-1",
+          model: "openai/gpt-oss-120b",
+          choices: [
+            {
+              message: { role: "assistant", content: "Latency makes regressions visible." },
+              finish_reason: "stop",
+            },
+          ],
+          usage: {
+            prompt_tokens: 12,
+            completion_tokens: 7,
+            total_tokens: 19,
+            completion_tokens_details: { reasoning_tokens: 3 },
+          },
+        },
+        200,
+      ),
+    );
+    const result = await new GroqClient({ apiKey: "test-key", fetchImpl }).complete({
+      messages: [{ role: "user", content: "Answer briefly." }],
+      temperature: 0,
+      maxCompletionTokens: 48,
+    });
+    expect(result.content).toContain("Latency");
+    expect(result.metadata.provider).toBe("groq");
+    expect(result.metadata.model).toBe("openai/gpt-oss-120b");
+    expect(result.metadata.usage).toMatchObject({
+      inputTokens: 12,
+      outputTokens: 7,
+      totalTokens: 19,
+      reasoningTokens: 3,
+    });
+    expect(result.metadata.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://api.groq.com/openai/v1/chat/completions",
+      expect.objectContaining({
+        method: "POST",
+        body: expect.stringContaining('"model":"openai/gpt-oss-120b"'),
+      }),
+    );
+  });
+
+  it("rejects missing Groq credentials without making a request", async () => {
+    const previous = process.env.GROQ_API_KEY;
+    delete process.env.GROQ_API_KEY;
+    const fetchImpl = vi.fn<typeof fetch>();
+    try {
+      await expect(
+        new GroqClient({ fetchImpl }).complete({
+          messages: [{ role: "user", content: "test" }],
+        }),
+      ).rejects.toBeInstanceOf(MissingGroqCredentialError);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) delete process.env.GROQ_API_KEY;
+      else process.env.GROQ_API_KEY = previous;
+    }
+  });
+
+  it("classifies 429 and preserves retry metadata without retrying", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ error: { message: "rate limited" } }), {
+        status: 429,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": "2",
+          "x-ratelimit-remaining-requests": "0",
+          "x-ratelimit-reset-requests": "2s",
+        },
+      }),
+    );
+    await expect(
+      new GroqClient({ apiKey: "test-key", fetchImpl }).complete({
+        messages: [{ role: "user", content: "test" }],
+      }),
+    ).rejects.toMatchObject({
+      code: "rate_limited",
+      retryAfterMs: 2_000,
+      metadata: expect.objectContaining({
+        rateLimit: expect.objectContaining({
+          remainingRequests: 0,
+          resetRequestsMs: 2_000,
+        }),
+      }),
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("instruments successful Groq calls as provider trace spans", async () => {
+    const persistence = new MemoryTrace();
+    const trace = new TraceWriter({ traceId: "groq-provider-trace", persistence });
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        id: "groq-chat-2",
+        model: "openai/gpt-oss-120b",
+        choices: [{ message: { content: "ok" } }],
+        usage: { prompt_tokens: 2, completion_tokens: 1, total_tokens: 3 },
+      }),
+    );
+    await new GroqClient({ apiKey: "test-key", fetchImpl, trace }).complete({
+      messages: [{ role: "user", content: "test" }],
+    });
+    const span = [...persistence.spans.values()][0];
+    expect(span?.type).toBe("provider.groq.reasoning");
+    expect(span?.status).toBe("ok");
+    expect(span?.tokenUsage).toMatchObject({ inputTokens: 2, outputTokens: 1 });
     expect(persistence.events).toHaveLength(1);
   });
 });

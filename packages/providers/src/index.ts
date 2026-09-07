@@ -4,29 +4,38 @@ import { join, relative, resolve, sep } from "node:path";
 import { spawnSync } from "node:child_process";
 import type { TraceWriter } from "@morphscope/tracing";
 import { redactSecrets } from "@morphscope/tracing";
+import type { ProviderCallMetadata, ProviderUsage } from "./provider-types.js";
+
+export type {
+  ProviderCallMetadata,
+  ProviderName,
+  ProviderUsage,
+  RateLimitMetadata,
+  ReasoningCompletionInput,
+  ReasoningCompletionResult,
+  ReasoningMessage,
+  ReasoningProvider,
+} from "./provider-types.js";
+export {
+  DEFAULT_GROQ_MODEL,
+  GROQ_FREE_MODELS,
+  GroqClient,
+  GroqProviderError,
+  GroqRateLimitError,
+  MissingGroqCredentialError,
+  type GroqClientOptions,
+  type GroqCompletionInput,
+  type GroqCompletionResult,
+  type GroqMessage,
+  type GroqModel,
+  type GroqProviderErrorCode,
+} from "./groq.js";
 
 const DEFAULT_BASE_URL = "https://api.morphllm.com";
 const DEFAULT_TIMEOUT_MS = 120_000;
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 
 type FetchImplementation = typeof fetch;
-
-export type ProviderUsage = {
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
-  costUsd?: number;
-};
-
-export type ProviderCallMetadata = {
-  operation: string;
-  endpoint: string;
-  status: number;
-  latencyMs: number;
-  usage: ProviderUsage | null;
-  responseId?: string;
-  model?: string;
-};
 
 export class MissingMorphCredentialError extends Error {
   constructor() {
@@ -75,6 +84,7 @@ export type WarpGrepContext = { file: string; content: string };
 export type WarpGrepResult = {
   success: boolean;
   contexts: WarpGrepContext[];
+  contextSource?: "provider_finish" | "local_read_fallback";
   summary?: string;
   toolCalls: number;
   metadata: ProviderCallMetadata;
@@ -149,6 +159,7 @@ export class MorphClient {
       const maxTurns = Math.max(1, Math.min(input.maxTurns ?? 6, 6));
       let metadata: ProviderCallMetadata | undefined;
       let toolCalls = 0;
+      const observedContexts: WarpGrepContext[] = [];
       for (let turn = 0; turn < maxTurns; turn += 1) {
         const response = await this.callJson("warpgrep", "/v1/chat/completions", {
           model: "morph-warp-grep-v2.1",
@@ -159,14 +170,28 @@ export class MorphClient {
         metadata = response.metadata;
         const choice = firstChoice(response.payload, "warpgrep");
         const message = asRecord(choice.message, "warpgrep message");
-        const content = typeof message.content === "string" ? message.content : "";
+        const content = contentText(message.content);
         const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
         messages.push({ role: "assistant", content, tool_calls: calls });
         if (calls.length === 0) {
           const parsed = parseStructuredContent(content);
+          const resolvedContexts = contextsFrom(parsed);
+          if (resolvedContexts.length === 0) {
+            if (parsed) resolvedContexts.push(...contextsFromFinish(repoRoot, parsed));
+          }
+          if (resolvedContexts.length === 0) {
+            const finish = finishFromContent(content);
+            if (finish) resolvedContexts.push(...contextsFromFinish(repoRoot, finish));
+          }
+          const contexts = resolvedContexts.length > 0 ? resolvedContexts : observedContexts;
           const result = {
             success: true,
-            contexts: contextsFrom(parsed),
+            contexts,
+            ...(resolvedContexts.length > 0
+              ? { contextSource: "provider_finish" as const }
+              : observedContexts.length > 0
+                ? { contextSource: "local_read_fallback" as const }
+                : {}),
             summary: stringValue(parsed?.summary) ?? (content || undefined),
             toolCalls,
             metadata,
@@ -184,9 +209,24 @@ export class MorphClient {
           toolCalls += 1;
           if (name === "finish") {
             const parsed = parseStructuredContent(args.answer ?? args.result ?? args ?? content);
+            const resolvedContexts = contextsFrom(parsed);
+            if (resolvedContexts.length === 0) {
+              resolvedContexts.push(...contextsFromFinish(repoRoot, args));
+            }
+            if (resolvedContexts.length === 0) {
+              const nestedFinish = stringValue(args.answer) ?? stringValue(args.result);
+              const finish = nestedFinish ? finishFromContent(nestedFinish) : undefined;
+              if (finish) resolvedContexts.push(...contextsFromFinish(repoRoot, finish));
+            }
+            const contexts = resolvedContexts.length > 0 ? resolvedContexts : observedContexts;
             const result = {
               success: true,
-              contexts: contextsFrom(parsed),
+              contexts,
+              ...(resolvedContexts.length > 0
+                ? { contextSource: "provider_finish" as const }
+                : observedContexts.length > 0
+                  ? { contextSource: "local_read_fallback" as const }
+                  : {}),
               summary: stringValue(parsed?.summary) ?? stringValue(args.summary),
               toolCalls,
               metadata,
@@ -195,6 +235,19 @@ export class MorphClient {
             return result;
           }
           const toolOutput = executeWarpTool(repoRoot, name, args);
+          if (name === "read") {
+            const inputPath = stringValue(args.path) ?? stringValue(args.file);
+            if (inputPath && !toolOutput.startsWith("Tool error:")) {
+              try {
+                observedContexts.push({
+                  file: relative(repoRoot, safeRepoPath(repoRoot, inputPath)),
+                  content: toolOutput,
+                });
+              } catch {
+                // The tool output remains in the provider conversation but is not a safe context.
+              }
+            }
+          }
           messages.push({ role: "tool", tool_call_id: callId, content: toolOutput });
         }
       }
@@ -348,6 +401,7 @@ export class MorphClient {
     const payload = asRecord(parsed, `${operation} response`);
     const usage = usageFrom(payload.usage);
     const metadata: ProviderCallMetadata = {
+      provider: "morph",
       operation,
       endpoint: path,
       status: response.status,
@@ -463,6 +517,81 @@ function contextsFrom(value: JsonRecord | undefined): WarpGrepContext[] {
   });
 }
 
+function contextsFromFinish(root: string, value: unknown): WarpGrepContext[] {
+  return fileSpecifications(value).flatMap((file) => {
+    const inputPath =
+      stringValue(file.path) ?? stringValue(file.file) ?? stringValue(file.file_path);
+    if (!inputPath) return [];
+    try {
+      const path = safeRepoPath(root, inputPath);
+      const lines = readFileSync(path, "utf8").split(/\r?\n/);
+      const range = stringValue(file.lines);
+      const [start, end] = lineRange(range, lines.length);
+      return [{ file: relative(root, path), content: lines.slice(start - 1, end).join("\n") }];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function fileSpecifications(value: unknown): JsonRecord[] {
+  if (Array.isArray(value)) return value.flatMap((item) => fileSpecifications(item));
+  if (typeof value === "string") {
+    try {
+      return fileSpecifications(JSON.parse(value));
+    } catch {
+      return [];
+    }
+  }
+  if (typeof value !== "object" || value === null) return [];
+  const record = value as JsonRecord;
+  const inputPath =
+    stringValue(record.path) ?? stringValue(record.file) ?? stringValue(record.file_path);
+  if (inputPath) return [record];
+  return Object.values(record).flatMap((item) => fileSpecifications(item));
+}
+
+function finishFromContent(content: string): JsonRecord | undefined {
+  const finishMatch = content.match(/<finish\b[^>]*>([\s\S]*?)<\/finish>/iu);
+  if (!finishMatch) return undefined;
+  const files = [...finishMatch[1].matchAll(/<file\b[^>]*>([\s\S]*?)<\/file>/giu)].flatMap(
+    (fileMatch) => {
+      const path = xmlValue(fileMatch[1], "path") ?? xmlValue(fileMatch[1], "file_path");
+      const lines = xmlValue(fileMatch[1], "lines");
+      return path ? [{ path, ...(lines ? { lines } : {}) }] : [];
+    },
+  );
+  return { files };
+}
+
+function xmlValue(content: string, tag: string): string | undefined {
+  const match = content.match(new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]*?)</" + tag + ">", "iu"));
+  return match?.[1]?.trim();
+}
+
+function contentText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (!Array.isArray(value)) return "";
+  return value
+    .flatMap((part) => {
+      if (typeof part === "string") return [part];
+      if (typeof part !== "object" || part === null || Array.isArray(part)) return [];
+      const text = stringValue((part as JsonRecord).text);
+      return text ? [text] : [];
+    })
+    .join("\n");
+}
+
+function lineRange(value: string | undefined, lineCount: number): [number, number] {
+  if (!value || value.trim() === "*") return [1, lineCount];
+  const firstRange = value.split(",")[0]?.trim() ?? "";
+  const match = firstRange.match(/^(\d+)(?:-(\d+))?$/u);
+  if (!match) return [1, lineCount];
+  const start = Math.max(1, Number(match[1]));
+  const end = Math.min(lineCount, Math.max(start, Number(match[2] ?? match[1])));
+  return [start, end];
+}
+
 function compactOutputFromMessages(payload: JsonRecord): string | undefined {
   if (!Array.isArray(payload.messages)) return undefined;
   const messages = payload.messages.flatMap((message) => {
@@ -561,8 +690,9 @@ function executeWarpTool(root: string, name: string | undefined, args: JsonRecor
     if (name === "read") {
       const path = safeRepoPath(root, stringValue(args.path) ?? stringValue(args.file));
       const lines = readFileSync(path, "utf8").split(/\r?\n/);
-      const start = Math.max(1, numberValue(args.start_line ?? args.start) ?? 1);
-      const end = Math.min(lines.length, numberValue(args.end_line ?? args.end) ?? lines.length);
+      const [rangeStart, rangeEnd] = lineRange(stringValue(args.lines), lines.length);
+      const start = Math.max(1, numberValue(args.start_line ?? args.start) ?? rangeStart);
+      const end = Math.min(lines.length, numberValue(args.end_line ?? args.end) ?? rangeEnd);
       return lines
         .slice(start - 1, end)
         .join("\n")
