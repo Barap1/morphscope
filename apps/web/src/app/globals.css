@@ -2938,7 +2938,7 @@ button:disabled {
 
 .compare-timeline-index {
   padding-top: 2px;
-  color: var(--faint);
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
@@ -2976,7 +2976,7 @@ button:disabled {
 }
 
 .compare-timeline-side > small {
-  color: var(--faint);
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 9px;
 }
@@ -3037,7 +3037,7 @@ button:disabled {
 
 .compare-technical-detail summary {
   width: fit-content;
-  color: var(--faint);
+  color: var(--muted);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 9px;
