@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "actions": [
+    { "type": "search", "query": "No benchmark results" },
+    {
+      "type": "replace",
+      "path": "README.md",
+      "search": "No benchmark results or experimental findings are claimed yet. All future results must\ncome from real repository execution and be accompanied by their methodology and limits.",
+      "replacement": "No benchmark results or experimental findings are claimed yet. All future results must\ncome from real repository execution and be accompanied by their methodology and limits.\n\nEvery future published result must link to a persisted trace and patch artifact.",
+      "expectedOccurrences": 1
+    },
+    { "type": "command", "command": "git diff --check" }
+  ]
+}

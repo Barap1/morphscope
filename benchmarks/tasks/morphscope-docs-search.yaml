@@ -1,0 +1,23 @@
+id: morphscope-docs-search
+repository: .
+commit: 0b33176
+issue: Add a short contributor note to README.md immediately after the sentence saying that no benchmark results are claimed yet. The note must say that every future published result links to a persisted trace and patch artifact.
+setup: node --version
+evaluation: node -e "const fs=require('node:fs'); const source=fs.readFileSync('README.md','utf8'); const expected='No benchmark results or experimental findings are claimed yet. All future results must\\ncome from real repository execution and be accompanied by their methodology and limits.\\n\\nEvery future published result must link to a persisted trace and patch artifact.'; if (!source.includes(expected)) process.exit(1)"
+resourceLimits:
+  maxDurationMs: 30000
+  maxTurns: 8
+  maxCostUsd: 0
+  maxNominalCostUsd: 0.1
+tags:
+  - real-repository
+  - markdown
+  - documentation
+  - sparse-edit
+metadata:
+  baselinePlan: benchmarks/tasks/morphscope-docs-search.baseline.json
+  repositoryType: real-git-repository
+  sandboxMode: docker
+  repositoryCommitSource: local-immutable-git
+  allowedChangedFiles: README.md
+  repositoryTestCommand: git diff --check

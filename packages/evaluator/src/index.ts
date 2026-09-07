@@ -75,7 +75,11 @@ export function evaluateTask(options: EvaluatorOptions): EvaluationResult {
   const diff = options.toolbox.gitDiff();
   const changedFiles = options.changedFiles ?? changedFilesFromDiff(diff);
   const patchStatistics = calculatePatchStatistics(diff, options.allowedChangedFiles);
-  const terminalState = terminalStateFromValidations(validations);
+  const validationTerminalState = terminalStateFromValidations(validations);
+  const terminalState =
+    validationTerminalState === "resolved" && patchStatistics.outOfScopeFiles.length > 0
+      ? "task_failed"
+      : validationTerminalState;
   const passed = terminalState === "resolved" && patchStatistics.outOfScopeFiles.length === 0;
   const failureClassification = classifyEvaluation({
     validations,

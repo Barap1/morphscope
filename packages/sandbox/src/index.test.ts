@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { SandboxInputError, SandboxManager } from "./index.js";
+import { dockerRunSecurityArgs, SandboxInputError, SandboxManager } from "./index.js";
 
 const temporaryDirectories: string[] = [];
 
@@ -30,6 +30,34 @@ function createRepository(): { directory: string; commit: string } {
 }
 
 describe("SandboxWorkspace", () => {
+  it("builds a constrained Docker command contract", () => {
+    const args = dockerRunSecurityArgs({
+      image: "morphscope/sandbox:node24",
+      root: "/tmp/morphscope-workspace",
+      cwd: "src",
+      maxMemoryMb: 512,
+      maxPids: 128,
+      maxCpus: 1,
+      containerName: "morphscope-test-container",
+    });
+    expect(args).toEqual(
+      expect.arrayContaining([
+        "run",
+        "--rm",
+        "--network=none",
+        "--read-only",
+        "--memory=512m",
+        "--pids-limit=128",
+        "--cpus=1",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+        "--tmpfs",
+        "--mount",
+        "type=bind,src=/tmp/morphscope-workspace,dst=/workspace,rw",
+      ]),
+    );
+  });
+
   it("checks out an immutable source and collects an isolated diff", () => {
     const source = createRepository();
     const workspace = new SandboxManager().acquire({

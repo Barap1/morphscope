@@ -270,13 +270,14 @@ function createMetadata(input: {
   responseId?: string;
   usage?: ProviderUsage | null;
 }): ProviderCallMetadata {
+  const usage = withNominalCost(input.model, input.usage);
   return {
     provider: "groq",
     operation: "chat.completions",
     endpoint: "/chat/completions",
     status: input.status,
     latencyMs: input.latencyMs,
-    usage: input.usage ?? null,
+    usage,
     ...(input.model ? { model: input.model } : {}),
     ...(input.responseId ? { responseId: input.responseId } : {}),
     ...(input.rateLimit ? { rateLimit: input.rateLimit } : {}),
@@ -358,14 +359,40 @@ function usageFrom(value: unknown): ProviderUsage | null {
   const outputTokens = numberValue(usage.completion_tokens ?? usage.output_tokens);
   const totalTokens = numberValue(usage.total_tokens);
   const reasoningTokens = numberValue(details?.reasoning_tokens);
+  const costUsd = numberValue(usage.cost_usd ?? usage.cost);
   if (
     inputTokens === undefined &&
     outputTokens === undefined &&
     totalTokens === undefined &&
-    reasoningTokens === undefined
+    reasoningTokens === undefined &&
+    costUsd === undefined
   )
     return null;
-  return { inputTokens, outputTokens, totalTokens, reasoningTokens };
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    reasoningTokens,
+    ...(costUsd !== undefined ? { costUsd } : {}),
+  };
+}
+
+function withNominalCost(model: string | undefined, usage: ProviderUsage | null | undefined) {
+  if (!usage || usage.nominalCostUsd !== undefined || !model) return usage ?? null;
+  const rates =
+    model === "openai/gpt-oss-120b"
+      ? { input: 0.15, output: 0.6 }
+      : model === "openai/gpt-oss-20b"
+        ? { input: 0.075, output: 0.3 }
+        : null;
+  if (!rates) return usage;
+  const inputTokens = usage.inputTokens ?? 0;
+  const outputTokens = usage.outputTokens ?? 0;
+  if (usage.inputTokens === undefined && usage.outputTokens === undefined) return usage;
+  return {
+    ...usage,
+    nominalCostUsd: (inputTokens * rates.input + outputTokens * rates.output) / 1_000_000,
+  };
 }
 
 function numberValue(value: unknown): number | undefined {

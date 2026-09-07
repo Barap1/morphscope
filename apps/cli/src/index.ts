@@ -1,11 +1,22 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
-import { runBaselineAgent, type BaselinePlan } from "@morphscope/agent-core";
+import { runBaselineAgent, runReasoningAgent, type BaselinePlan } from "@morphscope/agent-core";
 import { evaluateTask, type EvaluationResult } from "@morphscope/evaluator";
-import { createLocalWorkspace, type LocalWorkspace } from "@morphscope/sandbox";
-import { RunSchema, type FailureCategory, type TerminalState } from "@morphscope/schemas";
+import { GroqClient } from "@morphscope/providers";
+import {
+  createDockerWorkspace,
+  createLocalWorkspace,
+  type LocalWorkspace,
+} from "@morphscope/sandbox";
+import {
+  RunSchema,
+  type FailureCategory,
+  type TerminalState,
+  type FailureCategory as AgentFailureCategory,
+} from "@morphscope/schemas";
 import { ContentAddressedArtifactStore, SqliteTraceStore } from "@morphscope/storage";
 import { TraceWriter, redactText } from "@morphscope/tracing";
 import { persistedEvaluation } from "./persistence.js";
@@ -18,12 +29,12 @@ import { runSearchStudy } from "./search-study.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
 import { changedFilesFromPlan, createToolbox } from "./toolbox.js";
 
-type CliOptions = { taskPath: string; config: string; outputPath?: string };
+type CliOptions = { taskPath: string; config: "baseline" | "groq"; outputPath?: string };
 
 function parseArgs(argv: string[]): CliOptions {
   if (argv[0] !== "run" || !argv[1]) {
     throw new Error(
-      "usage: pnpm morphscope run <task.yaml|task.json> --config baseline [--output <dir>]",
+      "usage: pnpm morphscope run <task.yaml|task.json> --config baseline|groq [--output <dir>]",
     );
   }
   let config = "baseline";
@@ -33,8 +44,8 @@ function parseArgs(argv: string[]): CliOptions {
     else if (argv[index] === "--output") outputPath = argv[++index];
     else throw new Error(`unknown option: ${argv[index]}`);
   }
-  if (config !== "baseline")
-    throw new Error(`unsupported config: ${config}; the current runner provides baseline`);
+  if (config !== "baseline" && config !== "groq")
+    throw new Error(`unsupported config: ${config}; choose baseline or groq`);
   return { taskPath: resolve(argv[1]), config, outputPath };
 }
 
@@ -52,7 +63,9 @@ function morphScopeCommit(): string {
 function failureCategory(
   result: EvaluationResult | undefined,
   terminalState: TerminalState,
+  agentCategory?: AgentFailureCategory,
 ): FailureCategory | null {
+  if (agentCategory) return agentCategory;
   if (result?.failureClassification.category) return result.failureClassification.category;
   switch (terminalState) {
     case "environment_error":
@@ -121,6 +134,14 @@ async function main(): Promise<void> {
     | "budget_exhausted"
     | "cancelled" = "environment_error";
   let cancelled = false;
+  let agentCategory: AgentFailureCategory | undefined;
+  let agentProvider = "local";
+  let agentModel = "deterministic-baseline";
+  let agentInputTokens = 0;
+  let agentOutputTokens = 0;
+  let agentCostUsd = 0;
+  let agentNominalCostUsd = 0;
+  let agentCostBasis: "provider_reported" | "nominal_estimate" | "unavailable" = "unavailable";
   const onInterrupt = () => {
     cancelled = true;
     console.error("MorphScope cancellation requested; finishing the current safe boundary.");
@@ -133,13 +154,38 @@ async function main(): Promise<void> {
     const repository = isAbsolute(task.repository)
       ? task.repository
       : resolve(process.cwd(), task.repository);
-    workspace = createLocalWorkspace({
+    const controlledFixture = existsSync(join(repository, ".morphscope-commit"));
+    const configuredSandbox =
+      typeof task.metadata.sandboxMode === "string" ? task.metadata.sandboxMode : undefined;
+    const sandboxMode =
+      process.env.MORPHSCOPE_SANDBOX ??
+      configuredSandbox ??
+      (controlledFixture ? "local" : "docker");
+    const workspaceOptions = {
       sourcePath: repository,
       commit: task.commit,
-      workspaceRoot: join(outputRoot, "workspace"),
+      workspaceRoot: join(tmpdir(), `morphscope-run-${runId}`),
       resourceLimits: {
         maxDurationMs: task.resourceLimits.maxDurationMs,
         maxCommandOutputBytes: 256_000,
+      },
+    };
+    if (sandboxMode === "docker") {
+      workspace = createDockerWorkspace({
+        ...workspaceOptions,
+        ...(task.resourceLimits.maxMemoryMb !== undefined
+          ? { maxMemoryMb: task.resourceLimits.maxMemoryMb }
+          : {}),
+      });
+    } else if (sandboxMode === "local") {
+      workspace = createLocalWorkspace(workspaceOptions);
+    } else {
+      throw new Error(`unsupported sandbox mode: ${sandboxMode}; choose local or docker`);
+    }
+    rootSpan.update({
+      attributes: {
+        sandboxMode,
+        repositoryType: controlledFixture ? "controlled-fixture" : "git-repository",
       },
     });
     console.error(`[morphscope] running ${task.id} (${runId})`);
@@ -152,20 +198,41 @@ async function main(): Promise<void> {
     if (setup.exitCode !== 0 || setup.timedOut) {
       terminalState = setup.timedOut ? "timeout" : "environment_error";
     } else {
-      const planPathValue = task.metadata.baselinePlan;
-      if (typeof planPathValue !== "string")
-        throw new Error("task metadata.baselinePlan is required for baseline");
-      const planPath = resolve(process.cwd(), planPathValue);
-      const plan = readJsonFile<BaselinePlan>(planPath);
       const validationCommands = validationCommandsFromMetadata(task.metadata);
-      const agent = runBaselineAgent({
-        toolbox: createToolbox(workspace),
-        plan,
-        trace,
-        resourceLimits: task.resourceLimits,
-        isCancelled: () => cancelled,
-      });
-      terminalState = agent.terminalState;
+      let plan: BaselinePlan | undefined;
+      if (options.config === "groq") {
+        const agent = await runReasoningAgent({
+          toolbox: createToolbox(workspace),
+          issue: task.issue,
+          reasoning: new GroqClient({ trace }),
+          trace,
+          resourceLimits: task.resourceLimits,
+          isCancelled: () => cancelled,
+        });
+        terminalState = agent.terminalState;
+        agentCategory = agent.failureCategory;
+        agentProvider = agent.provider;
+        agentModel = agent.model;
+        agentInputTokens = agent.totalInputTokens;
+        agentOutputTokens = agent.totalOutputTokens;
+        agentCostUsd = agent.totalCostUsd;
+        agentNominalCostUsd = agent.totalNominalCostUsd;
+        agentCostBasis = agent.costBasis;
+      } else {
+        const planPathValue = task.metadata.baselinePlan;
+        if (typeof planPathValue !== "string")
+          throw new Error("task metadata.baselinePlan is required for baseline");
+        const planPath = resolve(process.cwd(), planPathValue);
+        plan = readJsonFile<BaselinePlan>(planPath);
+        const agent = runBaselineAgent({
+          toolbox: createToolbox(workspace),
+          plan,
+          trace,
+          resourceLimits: task.resourceLimits,
+          isCancelled: () => cancelled,
+        });
+        terminalState = agent.terminalState;
+      }
       if (cancelled) {
         terminalState = "cancelled";
       } else if (terminalState === "resolved") {
@@ -173,7 +240,9 @@ async function main(): Promise<void> {
           task,
           toolbox: createToolbox(workspace),
           timeoutMs: task.resourceLimits.maxDurationMs,
-          allowedChangedFiles: changedFilesFromPlan(plan),
+          ...(allowedChangedFilesFromTask(task.metadata, plan)
+            ? { allowedChangedFiles: allowedChangedFilesFromTask(task.metadata, plan) }
+            : {}),
           validations: validationCommands,
         });
         terminalState = evaluation.terminalState;
@@ -197,17 +266,24 @@ async function main(): Promise<void> {
       traceId,
       repositoryCommit: task.commit,
       MorphScopeCommit: morphScopeCommit(),
-      provider: "local",
-      model: "deterministic-baseline",
+      provider: options.config === "groq" ? agentProvider : "local",
+      model: options.config === "groq" ? agentModel : "deterministic-baseline",
       startedAt,
       completedAt,
       terminalState,
       totalLatency: Date.now() - startedMs,
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      totalCost: 0,
+      totalInputTokens: options.config === "groq" ? agentInputTokens : 0,
+      totalOutputTokens: options.config === "groq" ? agentOutputTokens : 0,
+      totalCost:
+        options.config === "groq"
+          ? agentCostBasis === "provider_reported"
+            ? agentCostUsd
+            : agentNominalCostUsd
+          : 0,
+      costBasis: options.config === "groq" ? agentCostBasis : "unavailable",
+      costCoverage: options.config === "groq" ? "free_tier" : "not_applicable",
       score: evaluation?.score ?? null,
-      failureCategory: failureCategory(evaluation, terminalState),
+      failureCategory: failureCategory(evaluation, terminalState, agentCategory),
       analysisMetadata: evaluation?.analysisMetadata,
       finalPatchArtifactId: diffArtifact.sha256,
       artifactIds: [diffArtifact.sha256],
@@ -224,7 +300,8 @@ async function main(): Promise<void> {
       terminalState === "resolved"
         ? undefined
         : {
-            category: failureCategory(evaluation, terminalState) ?? "environment_failure",
+            category:
+              failureCategory(evaluation, terminalState, agentCategory) ?? "environment_failure",
             message: `Run ended in ${terminalState}`,
           },
     );
@@ -276,6 +353,20 @@ function validationCommandsFromMetadata(metadata: Record<string, unknown>) {
     (value): value is { kind: "syntax" | "build" | "repository"; command: string } =>
       value !== null,
   );
+}
+
+function allowedChangedFilesFromTask(
+  metadata: Record<string, unknown>,
+  plan: BaselinePlan | undefined,
+): string[] | undefined {
+  if (typeof metadata.allowedChangedFiles === "string") {
+    const files = metadata.allowedChangedFiles
+      .split(",")
+      .map((file) => file.trim())
+      .filter(Boolean);
+    if (files.length > 0) return [...new Set(files)];
+  }
+  return plan ? changedFilesFromPlan(plan) : undefined;
 }
 
 function optionalValidation(value: unknown, kind: "syntax" | "build" | "repository") {

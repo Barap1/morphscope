@@ -86,6 +86,7 @@ describe("evaluateTask", () => {
       allowedChangedFiles: ["src/a.js"],
     });
     expect(result.passed).toBe(false);
+    expect(result.terminalState).toBe("task_failed");
     expect(result.failureClassification.category).toBe("regression");
   });
 

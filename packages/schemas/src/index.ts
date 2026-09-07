@@ -50,6 +50,7 @@ export const ResourceLimitsSchema = z
     maxOutputTokens: PositiveIntegerSchema.optional(),
     maxTotalTokens: PositiveIntegerSchema.optional(),
     maxCostUsd: NonNegativeNumberSchema.optional(),
+    maxNominalCostUsd: NonNegativeNumberSchema.optional(),
     maxTurns: PositiveIntegerSchema.optional(),
     maxMemoryMb: PositiveIntegerSchema.optional(),
   })
@@ -208,6 +209,16 @@ const EnvironmentManifestSchema = z
 
 export type EnvironmentManifest = z.infer<typeof EnvironmentManifestSchema>;
 
+export const CostBasisSchema = z.enum([
+  "provider_reported",
+  "nominal_estimate",
+  "free_tier_covered",
+  "unavailable",
+]);
+export type CostBasis = z.infer<typeof CostBasisSchema>;
+export const CostCoverageSchema = z.enum(["free_tier", "paid", "unknown", "not_applicable"]);
+export type CostCoverage = z.infer<typeof CostCoverageSchema>;
+
 export const RunSchema = z
   .object({
     id: IdentifierSchema,
@@ -226,6 +237,8 @@ export const RunSchema = z
     totalInputTokens: NonNegativeIntegerSchema,
     totalOutputTokens: NonNegativeIntegerSchema,
     totalCost: NonNegativeNumberSchema,
+    costBasis: CostBasisSchema.optional(),
+    costCoverage: CostCoverageSchema.optional(),
     score: ScoreSchema.nullable().optional(),
     failureCategory: FailureCategorySchema.nullable().optional(),
     analysisMetadata: AnalysisMetadataSchema.optional(),

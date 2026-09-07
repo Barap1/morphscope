@@ -469,7 +469,7 @@ function comparisonMetrics(left: StoredRun, right: StoredRun) {
     numericMetric("Total tokens", totalTokens(left), totalTokens(right), (value) =>
       integerFormat.format(value),
     ),
-    numericMetric("Cost", left.run.totalCost, right.run.totalCost, formatCost),
+    costMetric(left, right),
     numericMetric(
       "Changed files",
       left.evaluation?.patchStatistics?.changedFiles.length ?? 0,
@@ -497,6 +497,42 @@ function numericMetric(
     leftWidth: Math.max(4, Math.round((left / max) * 100)),
     rightWidth: Math.max(4, Math.round((right / max) * 100)),
   };
+}
+
+function costMetric(left: StoredRun, right: StoredRun) {
+  const leftReported = left.run.costBasis === "provider_reported";
+  const rightReported = right.run.costBasis === "provider_reported";
+  return {
+    label: "Cost",
+    left: formatRunCost(left),
+    right: formatRunCost(right),
+    deltaLabel:
+      leftReported && rightReported
+        ? `Δ ${formatCost(right.run.totalCost - left.run.totalCost)}`
+        : "Δ unavailable",
+    leftWidth: leftReported
+      ? Math.max(
+          4,
+          Math.round(
+            (left.run.totalCost / Math.max(left.run.totalCost, right.run.totalCost, 1)) * 100,
+          ),
+        )
+      : 4,
+    rightWidth: rightReported
+      ? Math.max(
+          4,
+          Math.round(
+            (right.run.totalCost / Math.max(left.run.totalCost, right.run.totalCost, 1)) * 100,
+          ),
+        )
+      : 4,
+  };
+}
+
+function formatRunCost(run: StoredRun): string {
+  if (run.run.costBasis === "provider_reported") return formatCost(run.run.totalCost);
+  if (run.run.costBasis === "nominal_estimate") return `Nominal ${formatCost(run.run.totalCost)}`;
+  return "n/a";
 }
 
 function alignSpans(left: TraceSpanRecord[], right: TraceSpanRecord[]): SpanPair[] {

@@ -23,7 +23,12 @@ Development is constrained to the providers' free allowances. The default model 
 explicitly configured and recorded in each reasoning run; a different model must be an
 intentional configuration change rather than a silent fallback. Nominal model pricing
 and actual free-tier coverage remain separate concepts; an API response without billing
-metadata is not recorded as a literal $0 cost.
+metadata is not recorded as a literal $0 cost. For the current default model, the nominal
+budget estimate uses Groq's published $0.15 per million input tokens and $0.60 per million
+output tokens; the run labels that value `nominal_estimate`, while `free_tier` remains a
+separate coverage field.
+`maxCostUsd` caps provider-reported billed cost; `maxNominalCostUsd` caps the published-rate
+estimate independently, so free-tier execution is not misreported as a paid zero-cost run.
 
 The live contract checks performed for CP4 used these current official references:
 

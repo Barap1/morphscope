@@ -61,13 +61,13 @@
   --ember: #98402f;
   --ember-bright: #8e3829;
   --ember-soft: rgba(199, 91, 67, 0.12);
-  --teal: #2f8b73;
+  --teal: #155f4e;
   --teal-soft: rgba(47, 139, 115, 0.12);
   --amber: #9a7521;
   --amber-soft: rgba(154, 117, 33, 0.12);
   --steel: #465d75;
   --steel-soft: rgba(82, 104, 127, 0.12);
-  --danger: #bd4e4b;
+  --danger: #9d3534;
   --danger-soft: rgba(189, 78, 75, 0.11);
   --shadow-panel: 0 16px 40px rgba(24, 29, 23, 0.08), 0 1px 0 rgba(255, 255, 255, 0.65) inset;
   --shadow-overlay: 0 26px 80px rgba(33, 40, 32, 0.24);

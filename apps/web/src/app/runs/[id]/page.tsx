@@ -112,7 +112,7 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
         <Metric
           label="Tokens / cost"
           value={`${run.totalInputTokens + run.totalOutputTokens}`}
-          detail={formatCost(run.totalCost)}
+          detail={formatRunCost(run)}
           icon={<GitDiff size={16} weight="bold" />}
           tone="warning"
         />
@@ -530,6 +530,12 @@ function formatCost(value: number): string {
     currency: "USD",
     maximumFractionDigits: 4,
   }).format(value);
+}
+
+function formatRunCost(run: { totalCost: number; costBasis?: string }): string {
+  if (run.costBasis === "provider_reported") return formatCost(run.totalCost);
+  if (run.costBasis === "nominal_estimate") return `Nominal ${formatCost(run.totalCost)}`;
+  return "Cost unavailable";
 }
 
 function formatBytes(value: number): string {

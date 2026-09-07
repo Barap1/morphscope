@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 15
+## Current scope: CHECKPOINT 18
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -59,6 +59,24 @@ explicit when the local trace store has no records. The `/compare` route selects
 persisted runs, constrains them to the same task by default, and shows aligned timelines,
 first-divergence markers, measured deltas, technical span details, patches, and
 verification outcomes. The experiment detail page links directly into a recorded pair.
+
+To prepare a hosted read-only snapshot, run `pnpm publish:dashboard`. Publication is explicit:
+only run IDs listed in `scripts/published-run-allowlist.json` are selected, known dashboard fields
+are projected, and paths/credential-shaped values are sanitized. New local traces are not published
+implicitly.
+
+The deterministic baseline remains offline by default. An explicit Groq-backed reasoning loop is
+available when a local free-tier credential is present:
+
+```bash
+pnpm morphscope run benchmarks/tasks/example.yaml --config groq
+```
+
+The Groq path uses `openai/gpt-oss-120b`, gives the model one constrained repository action per
+turn, and records provider/model identity, latency, usage, and classified provider failures. It
+does not silently fall back to another model. Use the deterministic path for routine CI and local
+development. Resource limits keep `maxCostUsd` for provider-reported billing and
+`maxNominalCostUsd` for the published-rate estimate; free-tier coverage is recorded separately.
 
 The controlled editing study is available offline by default:
 
@@ -106,9 +124,11 @@ version, and reasons in the run artifact and UI. The default fixture stays local
 raw search, deterministic editing, and no compaction; use `--include-morph` only for a
 deliberate provider-backed route when the decision features select one.
 
-The development benchmark catalog is in `benchmarks/tasks/catalog.json` and currently covers
-JavaScript, TypeScript, and Python controlled fixtures plus a clearly marked catalog-only
-real-repository task. Run the descriptive analysis over persisted artifacts with:
+The development benchmark catalog is in `benchmarks/tasks/catalog.json` and covers JavaScript,
+TypeScript, and Python controlled fixtures plus a pinned MorphScope Git-repository task. The real
+repository task selects Docker sandbox mode by default; build `Dockerfile.sandbox` first, or use
+`MORPHSCOPE_SANDBOX=local` only for an explicitly non-isolated local verification. Run the
+descriptive analysis over persisted artifacts with:
 
 ```bash
 pnpm morphscope analysis --input .morphscope --output analysis/output/results.json
@@ -151,7 +171,7 @@ pnpm morphscope run benchmarks/tasks/my-task.yaml --config baseline
 
 Keep the fixture deterministic and small enough for routine local runs. Add the task to
 `benchmarks/tasks/catalog.json` with its language, provenance, and whether it is runnable locally;
-do not describe a catalog-only repository as executed evidence.
+for real repositories pin an immutable Git commit and use Docker sandbox mode.
 
 ### Adding a provider
 

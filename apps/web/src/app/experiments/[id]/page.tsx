@@ -75,7 +75,7 @@ function ExperimentRecordView({ experiment }: { experiment: ExperimentRecord }) 
         />
         <Metric
           label="Cost"
-          value={formatCost(experiment.summary.totalCost)}
+          value={formatCostSummary(experiment.runs)}
           detail={`${integerFormat.format(experiment.summary.totalInputTokens + experiment.summary.totalOutputTokens)} tokens`}
           tone="warning"
         />
@@ -293,6 +293,13 @@ function formatCost(value: number): string {
     currency: "USD",
     maximumFractionDigits: 4,
   }).format(value);
+}
+
+function formatCostSummary(runs: StoredRun[]): string {
+  if (runs.length === 0 || runs.some((run) => run.run.costBasis !== "provider_reported")) {
+    return runs.some((run) => run.run.costCoverage === "free_tier") ? "Free-tier" : "n/a";
+  }
+  return formatCost(runs.reduce((sum, run) => sum + run.run.totalCost, 0));
 }
 
 function compareHref(runs: StoredRun[]): string {

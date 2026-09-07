@@ -151,6 +151,8 @@ async function exportResults(argv: string[]): Promise<void> {
       "score",
       "totalLatency",
       "totalCost",
+      "costBasis",
+      "costCoverage",
       "provider",
       "model",
     ];
@@ -164,6 +166,8 @@ async function exportResults(argv: string[]): Promise<void> {
         run.score ?? "",
         run.totalLatency,
         run.totalCost,
+        run.costBasis ?? "unavailable",
+        run.costCoverage ?? "unknown",
         run.provider,
         run.model,
       ]

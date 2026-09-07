@@ -6,11 +6,16 @@ setup: node --version
 evaluation: npm test
 resourceLimits:
   maxDurationMs: 30000
+  maxInputTokens: 12000
+  maxOutputTokens: 256
+  maxTotalTokens: 16000
   maxTurns: 8
   maxCostUsd: 0
+  maxNominalCostUsd: 0.1
 tags:
   - fixture
   - javascript
 metadata:
   baselinePlan: benchmarks/tasks/example.baseline.json
   fixtureVersion: fixture-v1
+  allowedChangedFiles: src/greeting.js

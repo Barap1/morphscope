@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   cpSync,
   existsSync,
@@ -25,6 +26,7 @@ const MAX_ERROR_OUTPUT_BYTES = 2_048;
 export const DEFAULT_ALLOWED_COMMANDS = [
   "bun",
   "bundle",
+  "cat",
   "cargo",
   "deno",
   "git",
@@ -73,6 +75,14 @@ export interface LocalWorkspaceOptions {
     maxDurationMs?: number;
     maxCommandOutputBytes?: number;
   };
+}
+
+export interface DockerWorkspaceOptions extends LocalWorkspaceOptions {
+  image?: string;
+  maxMemoryMb?: number;
+  maxDiskMb?: number;
+  maxPids?: number;
+  maxCpus?: number;
 }
 
 export interface CommandRequest {
@@ -548,6 +558,409 @@ export function createLocalWorkspace(options: LocalWorkspaceOptions): LocalWorks
   });
 }
 
+/**
+ * Runs repository commands in a disposable Docker container while keeping the checkout on a
+ * private bind mount. This is the preferred mode for real repositories; controlled fixtures can
+ * remain on the faster local developer boundary when Docker is unavailable.
+ */
+export function createDockerWorkspace(options: DockerWorkspaceOptions): LocalWorkspace {
+  return DockerWorkspace.acquire(options);
+}
+
+class DockerWorkspace implements LocalWorkspace {
+  private constructor(
+    private readonly base: SandboxWorkspace,
+    private readonly image: string,
+    private readonly maxMemoryMb: number,
+    private readonly maxDiskMb: number,
+    private readonly maxPids: number,
+    private readonly maxCpus: number,
+  ) {}
+
+  static acquire(options: DockerWorkspaceOptions): DockerWorkspace {
+    const image =
+      options.image ?? process.env.MORPHSCOPE_DOCKER_IMAGE ?? "morphscope/sandbox:node24";
+    const maxMemoryMb = positiveDockerLimit(options.maxMemoryMb ?? 512, "Docker memory");
+    const maxDiskMb = positiveDockerLimit(options.maxDiskMb ?? 512, "Docker workspace disk");
+    const maxPids = positiveDockerLimit(options.maxPids ?? 128, "Docker PID limit");
+    const maxCpus = options.maxCpus ?? 1;
+    if (!Number.isFinite(maxCpus) || maxCpus <= 0) {
+      throw new SandboxInputError("Docker CPU limit must be positive");
+    }
+    const base = SandboxWorkspace.acquire({
+      source: options.sourcePath,
+      commit: options.commit,
+      workspaceRoot: options.workspaceRoot,
+      resourceLimits: {
+        commandTimeoutMs: options.resourceLimits?.maxDurationMs,
+        maxOutputBytes: options.resourceLimits?.maxCommandOutputBytes,
+      },
+    });
+    try {
+      const inspected = spawnSync("docker", ["image", "inspect", image], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 15_000,
+        windowsHide: true,
+        env: createChildEnvironment(),
+      });
+      if (inspected.status !== 0) {
+        throw new SandboxError(
+          `Docker image ${image} is unavailable; build Dockerfile.sandbox or set MORPHSCOPE_DOCKER_IMAGE`,
+        );
+      }
+      if (workspaceSizeBytes(base.root) > maxDiskMb * 1024 * 1024) {
+        throw new SandboxError(`Docker workspace exceeds the ${maxDiskMb} MiB disk limit`);
+      }
+      return new DockerWorkspace(base, image, maxMemoryMb, maxDiskMb, maxPids, maxCpus);
+    } catch (error) {
+      base.dispose();
+      throw error;
+    }
+  }
+
+  get root(): string {
+    return this.base.root;
+  }
+
+  get sourceCommit(): string {
+    return this.base.sourceCommit;
+  }
+
+  runCommand(request: CommandRequest): CommandResult {
+    this.assertUsable();
+    const command = validateCommand(request.command, normalizeAllowlist());
+    const args = [...(request.args ?? [])].map((arg) => validateArgument(arg, "command argument"));
+    const cwdPath = this.resolveExistingPath(request.cwd ?? ".", "command cwd", true);
+    const cwd = toWorkspaceRelative(this.root, cwdPath);
+    return this.runContainer(
+      command,
+      args,
+      cwd,
+      request.timeoutMs,
+      request.maxOutputBytes,
+      undefined,
+      request.env,
+    );
+  }
+
+  runSetup(commandLine: string, timeoutMs?: number): WorkspaceCommandResult;
+  runSetup(request: CommandRequest): CommandResult;
+  runSetup(setup: string | CommandRequest, timeoutMs?: number): CommandResult {
+    if (typeof setup === "string") {
+      const tokens = parseCommandLine(setup);
+      if (tokens.length === 0) throw new SandboxInputError("Setup command must not be empty");
+      return this.runCommand({ command: tokens[0], args: tokens.slice(1), timeoutMs });
+    }
+    return this.runCommand(setup);
+  }
+
+  listFiles(path = "."): string[] {
+    const directory = this.resolveExistingPath(path, "file listing path", true);
+    const relativePath = toWorkspaceRelative(this.root, directory);
+    const result = this.runCommand({
+      command: "git",
+      args: ["ls-files", "--cached", "--others", "--exclude-standard", "--", relativePath],
+    });
+    if (result.exitCode !== 0)
+      throw new SandboxError(result.stderr || "Docker file listing failed");
+    return result.stdout.split(/\r?\n/u).filter(Boolean).sort(comparePaths);
+  }
+
+  search(pattern: string, path = "."): SearchResult {
+    if (pattern.length === 0) throw new SandboxInputError("Search pattern must not be empty");
+    validateArgument(pattern, "search pattern");
+    const searchPath = this.resolveExistingPath(path, "search path", true);
+    const relativePath = toWorkspaceRelative(this.root, searchPath);
+    const command = this.runCommand({
+      command: "rg",
+      args: [
+        "--no-heading",
+        "--line-number",
+        "--column",
+        "--color",
+        "never",
+        "--hidden",
+        "--sort",
+        "path",
+        "--glob",
+        "!.git/**",
+        "--",
+        pattern,
+        relativePath,
+      ],
+    });
+    return { pattern, path: relativePath, matches: parseRipgrepMatches(command.stdout), command };
+  }
+
+  readFile(path: string): string {
+    const filePath = this.resolveExistingPath(path, "file path", false);
+    const result = this.runCommand({
+      command: "cat",
+      args: [toWorkspaceRelative(this.root, filePath)],
+    });
+    if (result.exitCode !== 0) throw new SandboxError(result.stderr || `Unable to read ${path}`);
+    return result.stdout;
+  }
+
+  replaceFile(path: string, oldText: string, newText: string): FileReplacementResult {
+    if (oldText.length === 0) throw new SandboxInputError("Replacement target must not be empty");
+    const filePath = this.resolveExistingPath(path, "replacement file path", false);
+    const current = this.readFile(path);
+    const firstIndex = current.indexOf(oldText);
+    const secondIndex =
+      firstIndex === -1 ? -1 : current.indexOf(oldText, firstIndex + oldText.length);
+    if (firstIndex === -1)
+      throw new SandboxInputError(`Replacement target was not found in ${path}`);
+    if (secondIndex !== -1)
+      throw new SandboxInputError(`Replacement target is ambiguous in ${path}`);
+    const updated = `${current.slice(0, firstIndex)}${newText}${current.slice(firstIndex + oldText.length)}`;
+    const script =
+      "const fs=require('node:fs'); const [path, value]=process.argv.slice(1); fs.writeFileSync(path, value);";
+    const result = this.runContainer(
+      "node",
+      ["-e", script, `/workspace/${toWorkspaceRelative(this.root, filePath)}`, updated],
+      ".",
+      undefined,
+      Math.max(Buffer.byteLength(updated), 1_048_576),
+    );
+    if (result.exitCode !== 0) throw new SandboxError(result.stderr || `Unable to replace ${path}`);
+    return {
+      path: toWorkspaceRelative(this.root, filePath),
+      replacements: 1,
+      changed: updated !== current,
+    };
+  }
+
+  applyPatch(patch: string): { files: string[] } {
+    if (patch.length === 0 || patch.includes("\0")) {
+      throw new SandboxInputError("Patch must be non-empty and must not contain NUL bytes");
+    }
+    const files = patchFilePaths(patch);
+    for (const file of files) this.resolvePath(file, "patch path", true);
+    const result = this.runContainer(
+      "git",
+      ["apply", "--whitespace=nowarn", "-"],
+      ".",
+      undefined,
+      1_048_576,
+      patch,
+    );
+    if (result.exitCode !== 0)
+      throw new SandboxError(`Patch application failed: ${result.stderr || result.stdout}`);
+    return { files };
+  }
+
+  collectDiff(options: DiffOptions = {}): DiffResult {
+    const args = ["diff", "--no-ext-diff", "--no-color", "--unified=3", "--"];
+    for (const path of options.paths ?? []) {
+      const safePath = this.resolvePath(path, "diff path", true);
+      args.push(toWorkspaceRelative(this.root, safePath));
+    }
+    const command = this.runCommand({
+      command: "git",
+      args,
+      maxOutputBytes: options.maxOutputBytes,
+    });
+    return { diff: command.stdout, command };
+  }
+
+  dispose(): void {
+    this.base.dispose();
+  }
+
+  private runContainer(
+    command: string,
+    args: string[],
+    cwd: string,
+    timeoutMs?: number,
+    maxOutputBytes?: number,
+    input?: string,
+    env?: Readonly<Record<string, string | undefined>>,
+  ): CommandResult {
+    const timeout = normalizePositiveLimit(
+      timeoutMs ?? DEFAULT_COMMAND_TIMEOUT_MS,
+      "command timeout",
+    );
+    const outputLimit = normalizePositiveLimit(
+      maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES,
+      "maximum command output",
+    );
+    if (workspaceSizeBytes(this.root) > this.maxDiskMb * 1024 * 1024) {
+      throw new SandboxError(`Docker workspace exceeds the ${this.maxDiskMb} MiB disk limit`);
+    }
+    const containerName = `morphscope-cmd-${randomUUID()}`;
+    const dockerArgs = [
+      ...dockerRunSecurityArgs({
+        image: this.image,
+        root: this.root,
+        cwd,
+        maxMemoryMb: this.maxMemoryMb,
+        maxPids: this.maxPids,
+        maxCpus: this.maxCpus,
+        containerName,
+        env,
+      }),
+      command,
+      ...args,
+    ];
+    const start = hrtime.bigint();
+    const result = spawnSync("docker", dockerArgs, {
+      cwd: this.root,
+      env: createChildEnvironment(),
+      encoding: "buffer",
+      input,
+      killSignal: "SIGTERM",
+      maxBuffer: outputLimit,
+      shell: false,
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout,
+      windowsHide: true,
+    });
+    if (getErrorCode(result.error) === "ETIMEDOUT") cleanupDockerContainer(containerName);
+    const durationMs = Number(hrtime.bigint() - start) / 1_000_000;
+    const commandResultValue = commandResult(
+      command,
+      args,
+      `/workspace${cwd === "." ? "" : `/${cwd}`}`,
+      result,
+      durationMs,
+      outputLimit,
+    );
+    if (workspaceSizeBytes(this.root) > this.maxDiskMb * 1024 * 1024) {
+      return {
+        ...commandResultValue,
+        exitCode: null,
+        stderr: `Docker workspace exceeded the ${this.maxDiskMb} MiB disk limit`,
+        errorCode: "EDQUOT",
+      };
+    }
+    return commandResultValue;
+  }
+
+  private resolveExistingPath(input: string, label: string, directory: boolean): string {
+    const candidate = this.resolvePath(input, label, false);
+    let realPath: string;
+    try {
+      realPath = realpathSync.native(candidate);
+    } catch {
+      throw new SandboxInputError(`${label} does not exist: ${input}`);
+    }
+    assertWithin(this.root, realPath, label);
+    if (directory && !statSync(realPath).isDirectory())
+      throw new SandboxInputError(`${label} is not a directory: ${input}`);
+    if (!directory && !statSync(realPath).isFile())
+      throw new SandboxInputError(`${label} is not a regular file: ${input}`);
+    return realPath;
+  }
+
+  private resolvePath(input: string, label: string, allowMissing: boolean): string {
+    if (typeof input !== "string" || input.length === 0 || input.includes("\0")) {
+      throw new SandboxInputError(`${label} must be a non-empty path without NUL bytes`);
+    }
+    const candidate = isAbsolute(input) ? resolve(input) : resolve(this.root, input);
+    assertWithin(this.root, candidate, label);
+    if (existsSync(candidate)) {
+      const realPath = realpathSync.native(candidate);
+      assertWithin(this.root, realPath, label);
+      return realPath;
+    }
+    if (!allowMissing) throw new SandboxInputError(`${label} does not exist: ${input}`);
+    const parent = realpathSync.native(dirname(candidate));
+    assertWithin(this.root, parent, label);
+    return candidate;
+  }
+
+  private assertUsable(): void {
+    if (this.base.isDisposed) throw new SandboxDisposedError();
+  }
+}
+
+export interface DockerRunSecurityOptions {
+  image: string;
+  root: string;
+  cwd: string;
+  maxMemoryMb: number;
+  maxPids: number;
+  maxCpus: number;
+  containerName: string;
+  env?: Readonly<Record<string, string | undefined>>;
+}
+
+export function dockerRunSecurityArgs(options: DockerRunSecurityOptions): string[] {
+  return [
+    "run",
+    "--rm",
+    "--name",
+    options.containerName,
+    "--network=none",
+    "--read-only",
+    `--memory=${options.maxMemoryMb}m`,
+    `--pids-limit=${options.maxPids}`,
+    `--cpus=${options.maxCpus}`,
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges",
+    "--tmpfs",
+    "/tmp:rw,nosuid,nodev,noexec,size=64m",
+    "--mount",
+    `type=bind,src=${options.root},dst=/workspace,rw`,
+    "--workdir",
+    `/workspace${options.cwd === "." ? "" : `/${options.cwd}`}`,
+    ...dockerUserArgs(),
+    ...dockerEnvironmentArgs(options.env),
+    options.image,
+  ];
+}
+
+function cleanupDockerContainer(containerName: string): void {
+  spawnSync("docker", ["rm", "-f", containerName], {
+    encoding: "utf8",
+    stdio: "ignore",
+    timeout: 5_000,
+    windowsHide: true,
+    env: createChildEnvironment(),
+  });
+}
+
+function positiveDockerLimit(value: number, label: string): number {
+  if (!Number.isSafeInteger(value) || value < 1)
+    throw new SandboxInputError(`${label} must be a positive integer`);
+  return value;
+}
+
+function dockerEnvironmentArgs(env?: Readonly<Record<string, string | undefined>>): string[] {
+  const args: string[] = [];
+  for (const [name, value] of Object.entries(env ?? {})) {
+    validateArgument(name, "environment variable name");
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name)) {
+      throw new SandboxInputError(`Invalid environment variable name: ${name}`);
+    }
+    if (value !== undefined)
+      args.push("--env", `${name}=${validateArgument(value, "environment variable value")}`);
+  }
+  return args;
+}
+
+function workspaceSizeBytes(root: string): number {
+  let total = 0;
+  const walk = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name);
+      if (entry.isSymbolicLink()) continue;
+      if (entry.isDirectory()) walk(path);
+      else if (entry.isFile()) total += statSync(path).size;
+    }
+  };
+  walk(root);
+  return total;
+}
+
+function dockerUserArgs(): string[] {
+  const uid = typeof process.getuid === "function" ? process.getuid() : undefined;
+  const gid = typeof process.getgid === "function" ? process.getgid() : undefined;
+  return uid !== undefined && gid !== undefined ? ["--user", `${uid}:${gid}`] : [];
+}
+
 function normalizeResourceLimits(
   limits: Partial<SandboxResourceLimits> = {},
 ): SandboxResourceLimits {
@@ -920,7 +1333,7 @@ function parseRipgrepMatches(output: string): SearchMatch[] {
   });
 }
 
-function parseCommandLine(input: string): string[] {
+export function parseCommandLine(input: string): string[] {
   if (input.trim().length === 0) {
     return [];
   }

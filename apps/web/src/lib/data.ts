@@ -211,9 +211,11 @@ export function loadRun(id: string): StoredRun | null {
 
 export function loadExperiments(runs = loadRuns()): ExperimentRecord[] {
   const byRunId = new Map(runs.map((storedRun) => [storedRun.run.id, storedRun]));
-  const records = findFiles(join(morphScopeRoot(), "experiments"), "experiment.json")
-    .map((sourceFile) => readExperiment(sourceFile, byRunId))
-    .filter((record): record is ExperimentRecord => record !== null);
+  const records = isPublishedDashboard()
+    ? loadPublishedExperiments(byRunId)
+    : findFiles(join(morphScopeRoot(), "experiments"), "experiment.json")
+        .map((sourceFile) => readExperiment(sourceFile, byRunId))
+        .filter((record): record is ExperimentRecord => record !== null);
 
   const baselineRuns = runs.filter((storedRun) => storedRun.run.experimentId === "local-baseline");
   if (
@@ -315,11 +317,26 @@ function readPublishedRun(value: unknown): StoredRun | null {
   };
 }
 
+function loadPublishedExperiments(byRunId: Map<string, StoredRun>): ExperimentRecord[] {
+  if (!isRecord(publishedData) || !Array.isArray(publishedData.experiments)) return [];
+  return publishedData.experiments
+    .map((payload) => readExperimentPayload(payload, "published://morphscope-experiments", byRunId))
+    .filter((record): record is ExperimentRecord => record !== null);
+}
+
 function readExperiment(
   sourceFile: string,
   byRunId: Map<string, StoredRun>,
 ): ExperimentRecord | null {
   const payload = readJson(sourceFile);
+  return readExperimentPayload(payload, sourceFile, byRunId);
+}
+
+function readExperimentPayload(
+  payload: unknown,
+  sourceFile: string,
+  byRunId: Map<string, StoredRun>,
+): ExperimentRecord | null {
   if (!isRecord(payload) || !isRecord(payload.experiment)) return null;
   const experiment = payload.experiment;
   if (typeof experiment.id !== "string" || typeof experiment.name !== "string") return null;

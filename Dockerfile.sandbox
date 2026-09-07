@@ -1,0 +1,11 @@
+FROM node:24-bookworm-slim
+
+RUN apt-get update \
+  && apt-get install --no-install-recommends --yes ca-certificates git ripgrep \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+ENV HOME=/tmp
+
+# MorphScope supplies the host UID/GID at runtime. The container is launched without
+# network access, Linux capabilities, or a writable image filesystem.

@@ -6,6 +6,7 @@ export type ProviderUsage = {
   totalTokens?: number;
   reasoningTokens?: number;
   costUsd?: number;
+  nominalCostUsd?: number;
 };
 
 export type RateLimitMetadata = {
