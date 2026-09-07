@@ -8,7 +8,9 @@ import { createLocalWorkspace, type LocalWorkspace } from "@morphscope/sandbox";
 import { RunSchema, type FailureCategory, type TerminalState } from "@morphscope/schemas";
 import { ContentAddressedArtifactStore, SqliteTraceStore } from "@morphscope/storage";
 import { TraceWriter } from "@morphscope/tracing";
+import { runSearchStudy } from "./search-study.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
+import { createToolbox } from "./toolbox.js";
 
 type CliOptions = { taskPath: string; config: string; outputPath?: string };
 
@@ -60,34 +62,13 @@ function failureCategory(
   }
 }
 
-function createToolbox(workspace: LocalWorkspace) {
-  return {
-    listFiles: (path?: string) => workspace.listFiles(path),
-    search: (query: string, options?: { path?: string; maxResults?: number }) => {
-      const result = workspace.search(query, options?.path);
-      const matches = options?.maxResults
-        ? result.matches.slice(0, options.maxResults)
-        : result.matches;
-      return matches
-        .map((match) => `${match.path}:${match.line}:${match.column}:${match.text}`)
-        .join("\n");
-    },
-    readFile: (path: string, options?: { startLine?: number; endLine?: number }) => {
-      const lines = workspace.readFile(path).split(/\r?\n/);
-      const start = Math.max(1, options?.startLine ?? 1);
-      const end = Math.min(lines.length, options?.endLine ?? lines.length);
-      return lines.slice(start - 1, end).join("\n");
-    },
-    replaceFile: (input: { path: string; search: string; replacement: string }) =>
-      workspace.replaceFile(input.path, input.search, input.replacement),
-    applyPatch: (patch: string) => workspace.applyPatch(patch),
-    runCommand: (command: string) => workspace.runSetup(command),
-    gitDiff: () => workspace.collectDiff().diff,
-  };
-}
-
-function main(): void {
-  const options = parseArgs(process.argv.slice(2));
+async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  if (argv[0] === "experiment") {
+    await runSearchStudy(argv);
+    return;
+  }
+  const options = parseArgs(argv);
   const task = readTaskFile(options.taskPath);
   const runId = randomUUID();
   const traceId = randomUUID();
@@ -239,4 +220,8 @@ function main(): void {
   }
 }
 
-main();
+main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`MorphScope CLI failed: ${message}`);
+  process.exitCode = 1;
+});

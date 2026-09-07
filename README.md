@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 4
+## Current scope: CHECKPOINT 5
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -85,6 +85,19 @@ and a response hash; it does not persist the provider response text.
 
 No benchmark results or experimental findings are claimed yet. All future results must
 come from real repository execution and be accompanied by their methodology and limits.
+
+The first controlled search study is available through:
+
+```bash
+pnpm morphscope experiment run search-study
+```
+
+It runs the same fixture task twice in isolated workspaces, varying only the search
+provider between local raw search and Morph WarpGrep. The baseline plan is intentionally
+deterministic for this checkpoint, so the study measures search differences without
+silently changing the editing strategy or inventing model outcomes. Each arm persists a
+run trace, patch artifact, search-context artifact, provider metadata, and measurement
+manifest under `.morphscope/experiments/search-study/<experiment-id>/`.
 
 See [`MorphScope_PRD.md`](MorphScope_PRD.md) and [`MorphScope_spec.md`](MorphScope_spec.md)
 for the project requirements and execution specification.

@@ -30,6 +30,18 @@ export {
   type GroqModel,
   type GroqProviderErrorCode,
 } from "./groq.js";
+export {
+  RawSearchProvider,
+  WarpGrepProvider,
+  type RawSearchExecutor,
+  type SearchContext,
+  type SearchMatch,
+  type SearchMeasurement,
+  type SearchProvider,
+  type SearchProviderInput,
+  type SearchProviderResult,
+  type WarpGrepExecutor,
+} from "./search.js";
 
 const DEFAULT_BASE_URL = "https://api.morphllm.com";
 const DEFAULT_TIMEOUT_MS = 120_000;
