@@ -3025,7 +3025,7 @@ button:disabled {
   padding: 8px;
   border: 1px dashed var(--line-strong);
   border-radius: 5px;
-  color: var(--faint) !important;
+  color: var(--muted) !important;
   font-family: var(--font-mono);
   font-size: 9px !important;
   white-space: normal !important;
