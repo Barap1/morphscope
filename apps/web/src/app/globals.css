@@ -2209,6 +2209,65 @@ button:disabled {
   white-space: nowrap;
 }
 
+.edit-evidence {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.edit-evidence-heading {
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.edit-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.edit-evidence-grid span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.edit-evidence-grid small {
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.edit-evidence-grid strong {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-request-details summary {
+  width: fit-content;
+  color: var(--faint);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.edit-request-details .ui-code-block {
+  max-height: 150px;
+  margin-top: 8px;
+  padding: 10px;
+  font-size: 9px;
+}
+
 .validation-table {
   margin-top: 16px;
   box-shadow: none;
@@ -3175,6 +3234,9 @@ button:disabled {
   }
   .metric-delta-bar {
     grid-column: 1 / -1;
+  }
+  .edit-evidence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .compare-timeline-row {
     grid-template-columns: 22px minmax(0, 1fr) 30px minmax(0, 1fr);

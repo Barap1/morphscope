@@ -57,9 +57,24 @@ export type EvaluationRecord = {
   analysisMetadata?: Run["analysisMetadata"];
 };
 
+export type EditRecord = {
+  provider: string;
+  success: boolean;
+  originalSha256: string;
+  requestedEdit: string;
+  finalSha256?: string;
+  unifiedDiff: string;
+  syntax: { status: string; message?: string };
+  retryCount: number;
+  latencyMs: number;
+  metadata: Record<string, unknown> | null;
+  error?: string;
+};
+
 export type StoredRun = {
   run: Run;
   evaluation: EvaluationRecord | null;
+  edit: EditRecord | null;
   trace: { spans: TraceSpanRecord[]; events: TraceEventRecord[] };
   search: Record<string, unknown> | null;
   patch: string | null;
@@ -92,6 +107,7 @@ export type ExperimentManifest = {
   configurations?: Array<{
     id: string;
     searchProvider?: string;
+    editProvider?: string;
     runId?: string;
     terminalState?: string;
     search?: Record<string, unknown> | null;
@@ -184,6 +200,7 @@ function readStoredRun(sourceFile: string): StoredRun | null {
   return {
     run: parsedRun.data,
     evaluation: isRecord(payload.evaluation) ? (payload.evaluation as EvaluationRecord) : null,
+    edit: isRecord(payload.edit) ? (payload.edit as EditRecord) : null,
     trace: {
       spans: Array.isArray(trace.spans) ? (trace.spans as TraceSpanRecord[]) : [],
       events: Array.isArray(trace.events) ? (trace.events as TraceEventRecord[]) : [],
@@ -210,6 +227,9 @@ function readExperiment(
             id: configuration.id,
             ...(typeof configuration.searchProvider === "string"
               ? { searchProvider: configuration.searchProvider }
+              : {}),
+            ...(typeof configuration.editProvider === "string"
+              ? { editProvider: configuration.editProvider }
               : {}),
             ...(typeof configuration.runId === "string" ? { runId: configuration.runId } : {}),
             ...(typeof configuration.terminalState === "string"

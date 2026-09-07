@@ -170,6 +170,7 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
             <TestTube size={17} weight="bold" aria-hidden />
           </div>
           <LogContainer lines={logLines} label="Persisted evaluation output" />
+          {storedRun.edit ? <EditEvidence edit={storedRun.edit} /> : null}
           <ValidationTable storedRun={storedRun} />
         </Panel>
         <Panel className="data-panel">
@@ -197,6 +198,50 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
           ) : null}
         </Panel>
       </div>
+    </div>
+  );
+}
+
+function EditEvidence({ edit }: { edit: NonNullable<StoredRun["edit"]> }) {
+  return (
+    <div className="edit-evidence">
+      <div className="edit-evidence-heading">
+        <span className="section-label">Edit evidence</span>
+        <StatusBadge
+          status={edit.success ? "success" : "failed"}
+          label={edit.success ? "applied" : "rejected"}
+        />
+      </div>
+      <div className="edit-evidence-grid">
+        <span>
+          <small>Provider</small>
+          <strong>{edit.provider}</strong>
+        </span>
+        <span>
+          <small>Syntax</small>
+          <strong>{edit.syntax.status}</strong>
+        </span>
+        <span>
+          <small>Apply latency</small>
+          <strong>{formatDuration(edit.latencyMs)}</strong>
+        </span>
+        <span>
+          <small>Retries</small>
+          <strong>{edit.retryCount}</strong>
+        </span>
+        <span>
+          <small>Original hash</small>
+          <strong>{edit.originalSha256.slice(0, 12)}…</strong>
+        </span>
+        <span>
+          <small>Final hash</small>
+          <strong>{edit.finalSha256 ? `${edit.finalSha256.slice(0, 12)}…` : "not recorded"}</strong>
+        </span>
+      </div>
+      <details className="edit-request-details">
+        <summary>Requested edit</summary>
+        <CodeBlock language="text" code={edit.requestedEdit} />
+      </details>
     </div>
   );
 }

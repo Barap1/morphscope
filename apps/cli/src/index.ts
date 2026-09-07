@@ -9,6 +9,7 @@ import { RunSchema, type FailureCategory, type TerminalState } from "@morphscope
 import { ContentAddressedArtifactStore, SqliteTraceStore } from "@morphscope/storage";
 import { TraceWriter, redactText } from "@morphscope/tracing";
 import { persistedEvaluation } from "./persistence.js";
+import { runEditStudy } from "./edit-study.js";
 import { runSearchStudy } from "./search-study.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
 import { changedFilesFromPlan, createToolbox } from "./toolbox.js";
@@ -66,7 +67,8 @@ function failureCategory(
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   if (argv[0] === "experiment") {
-    await runSearchStudy(argv);
+    if (argv[2] === "edit-study") await runEditStudy(argv);
+    else await runSearchStudy(argv);
     return;
   }
   const options = parseArgs(argv);

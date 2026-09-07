@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 8
+## Current scope: CHECKPOINT 9
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -59,6 +59,16 @@ explicit when the local trace store has no records. The `/compare` route selects
 persisted runs, constrains them to the same task by default, and shows aligned timelines,
 first-divergence markers, measured deltas, technical span details, patches, and
 verification outcomes. The experiment detail page links directly into a recorded pair.
+
+The controlled editing study is available offline by default:
+
+```bash
+pnpm morphscope experiment run edit-study
+```
+
+It keeps the original file and evaluation fixed while comparing deterministic, unified-diff,
+and full-file editing. Use `--include-fast-apply` only when a deliberate live Morph call is
+warranted; the Fast Apply endpoint itself was already accepted during CP4.
 
 To run the real TypeScript fixture from a clean disposable workspace:
 

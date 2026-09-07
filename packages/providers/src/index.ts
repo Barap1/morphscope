@@ -42,6 +42,17 @@ export {
   type SearchProviderResult,
   type WarpGrepExecutor,
 } from "./search.js";
+export {
+  DeterministicEditProvider,
+  FullFileEditProvider,
+  MorphFastApplyEditProvider,
+  UnifiedDiffEditProvider,
+  type DeterministicEditTransform,
+  type EditInput,
+  type EditProvider,
+  type EditResult,
+  type SyntaxCheck,
+} from "./edit.js";
 
 const DEFAULT_BASE_URL = "https://api.morphllm.com";
 const DEFAULT_TIMEOUT_MS = 120_000;

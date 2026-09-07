@@ -174,7 +174,7 @@ function ConfigurationRow({
   return (
     <tr>
       <td className="table-code">{configuration.id}</td>
-      <td>{configuration.searchProvider ?? "local baseline"}</td>
+      <td>{configuration.searchProvider ?? configuration.editProvider ?? "local baseline"}</td>
       <td>
         <StatusBadge
           status={statusFor(
