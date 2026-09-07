@@ -202,7 +202,11 @@ export function loadRuns(): StoredRun[] {
 }
 
 export function isPublishedDashboard(): boolean {
-  return process.env.MORPHSCOPE_HOSTED === "true" || process.env.VERCEL === "1";
+  return (
+    process.env.MORPHSCOPE_HOSTED === "true" ||
+    process.env.MORPHSCOPE_HOSTED_READ_ONLY === "true" ||
+    process.env.VERCEL === "1"
+  );
 }
 
 export function loadRun(id: string): StoredRun | null {
