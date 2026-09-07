@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-07T20:38:38.722Z",
+  "generatedAt": "2026-09-07T20:44:54.897Z",
   "provenance": {
     "kind": "sanitized-local-artifacts",
-    "sourceCommit": "ebf85429b8fbe9e76f09cc44273a233ccc3b8b72",
+    "sourceCommit": "dc971fd8dd155a62802b8e54688cac1fbfb5d400",
     "runCount": 32,
     "experimentCount": 12,
     "note": "Generated from persisted MorphScope traces; hosted mode is read-only."
@@ -7916,6 +7916,15 @@
       "setup": "node --version",
       "evaluation": "npm test",
       "tags": ["fixture", "javascript"]
+    },
+    {
+      "id": "morphscope-docs-search",
+      "repository": ".",
+      "commit": "0b33176",
+      "issue": "Add a short contributor note to README.md immediately after the sentence saying that no benchmark results are claimed yet. The note must say that every future published result links to a persisted trace and patch artifact.",
+      "setup": "node --version",
+      "evaluation": "node -e \"const fs=require('node:fs'); const source=fs.readFileSync('README.md','utf8'); const expected='No benchmark results or experimental findings are claimed yet. All future results must\\\\ncome from real repository execution and be accompanied by their methodology and limits.\\\\n\\\\nEvery future published result must link to a persisted trace and patch artifact.'; if (!source.includes(expected)) process.exit(1)\"",
+      "tags": ["real-repository", "markdown", "documentation", "sparse-edit"]
     },
     {
       "id": "python-slug",

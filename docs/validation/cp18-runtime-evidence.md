@@ -55,10 +55,11 @@ credential or raw provider response.
 
 ## Hosted dashboard and read-only boundary
 
-- The sanitized snapshot was regenerated after commit `ebf85429b8fbe9e76f09cc44273a233ccc3b8b72`.
-  It contains `32` allowlisted runs, `12` experiments, and self-contained contracts for all
-  four published task IDs. Hosted task pages therefore do not depend on benchmark files being
-  present in the Vercel deployment.
+- The sanitized snapshot was regenerated after commit `dc971fd8dd155a62802b8e54688cac1fbfb5d400`.
+  It contains `32` allowlisted runs, `12` experiments, and self-contained contracts for the
+  five task definitions used by the dashboard, including all four task IDs with published
+  runs. Hosted task pages therefore do not depend on benchmark files being present in the
+  Vercel deployment.
 - The existing Vercel project is `barap1s-projects/morphscope`, with the production alias
   `https://morphscope.vercel.app`. The hosted data path is read-only and uses the committed
   sanitized snapshot; no provider credentials are required by the web runtime.
