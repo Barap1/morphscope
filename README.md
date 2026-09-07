@@ -1,8 +1,8 @@
 # MorphScope
 
 MorphScope is an open-source coding-agent evaluation, profiling, trace-replay, and
-adaptive-routing platform. It is under active development, and this repository remains
-private during implementation.
+adaptive-routing platform. The public dashboard is a read-only view over explicitly published,
+sanitized traces; the full runner and provider-backed workflows remain local developer tooling.
 
 ## Prerequisites
 
@@ -24,6 +24,44 @@ pnpm format:check
 
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
+
+## Live dashboard and deployment
+
+[Open the MorphScope dashboard](https://morphscope.vercel.app). The hosted Vercel application is
+read-only: it serves the committed `apps/web/src/lib/published-data.json` snapshot and has no
+route for arbitrary repository execution, shell commands, provider calls, local SQLite access, or
+dashboard mutations.
+
+Generate a safe snapshot locally from persisted traces with:
+
+```bash
+pnpm publish:dashboard
+```
+
+Publication is constrained by `scripts/published-run-allowlist.json`, projects only dashboard
+fields, redacts credential-shaped values, and writes no raw provider response bodies. The local
+runner remains available for full verification:
+
+```bash
+pnpm morphscope run benchmarks/tasks/example.yaml --config baseline
+pnpm morphscope run benchmarks/tasks/morphscope-docs-search.yaml --config baseline
+```
+
+The real-repository task uses Docker by default; build `Dockerfile.sandbox` first. Use
+`MORPHSCOPE_SANDBOX=local` only for an explicitly non-isolated local check. Provider validation is
+optional and requires local-only variables named `GROQ_API_KEY` for Groq reasoning and
+`MORPH_API_KEY` for the Morph technical spike. Never use either variable as a `NEXT_PUBLIC_*`
+value or add provider credentials to the Vercel project.
+
+From an authenticated checkout, deploy the dashboard with:
+
+```bash
+vercel link --yes --project morphscope
+vercel deploy --prod --yes
+```
+
+The Vercel project uses `apps/web` as its Root Directory and `apps/web/vercel.json` for the
+workspace install and Next.js build commands.
 
 ## Current scope: CHECKPOINT 18
 
@@ -65,18 +103,20 @@ only run IDs listed in `scripts/published-run-allowlist.json` are selected, know
 are projected, and paths/credential-shaped values are sanitized. New local traces are not published
 implicitly.
 
-The deterministic baseline remains offline by default. An explicit Groq-backed reasoning loop is
-available when a local free-tier credential is present:
+The deterministic baseline remains offline by default. An experimental Groq-backed reasoning loop
+can be exercised when a local free-tier credential is present:
 
 ```bash
 pnpm morphscope run benchmarks/tasks/example.yaml --config groq
 ```
 
 The Groq path uses `openai/gpt-oss-120b`, gives the model one constrained repository action per
-turn, and records provider/model identity, latency, usage, and classified provider failures. It
-does not silently fall back to another model. Use the deterministic path for routine CI and local
-development. Resource limits keep `maxCostUsd` for provider-reported billing and
-`maxNominalCostUsd` for the published-rate estimate; free-tier coverage is recorded separately.
+turn, and records provider/model identity, latency, usage, and classified provider failures. The
+release validation proved authentication and the adapter smoke path, but the multi-turn fixture
+failed on a later provider JSON-validation response, so no successful end-to-end Groq result is
+claimed yet. It does not silently fall back to another model. Use the deterministic path for
+routine CI and local development. Resource limits keep `maxCostUsd` for provider-reported billing
+and `maxNominalCostUsd` for the published-rate estimate; free-tier coverage is recorded separately.
 
 The controlled editing study is available offline by default:
 

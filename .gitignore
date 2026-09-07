@@ -49,3 +49,4 @@ analysis/.cache/
 analysis/output/
 analysis/results/
 *.egg-info/
+.vercel/

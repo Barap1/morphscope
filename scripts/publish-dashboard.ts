@@ -255,7 +255,6 @@ function projectCommand(value: JsonRecord): JsonRecord {
   return projectRecord(value, [
     "command",
     "args",
-    "cwd",
     "exitCode",
     "signal",
     "durationMs",

@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-07T17:57:56.220Z",
+  "generatedAt": "2026-09-07T19:45:10.789Z",
   "provenance": {
     "kind": "sanitized-local-artifacts",
-    "sourceCommit": "0b33176af6c3610a6ec4c8cddd0b6acaa6a99a90",
+    "sourceCommit": "8ed60fb5d1ed72a8ded4e5e78245fe51699718ea",
     "runCount": 32,
     "experimentCount": 12,
     "note": "Generated from persisted MorphScope traces; hosted mode is read-only."
@@ -48,7 +48,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/runs/c7df8ec0-8b5e-4d26-9cb3-e8b10e47ffd5/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 166.135416,
@@ -63,7 +62,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/runs/c7df8ec0-8b5e-4d26-9cb3-e8b10e47ffd5/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 166.135416,
@@ -263,7 +261,6 @@
         "command": {
           "command": "node",
           "args": ["test/adversarial.test.js"],
-          "cwd": "workspace/.morphscope/runs/9a1479fc-ce87-46f1-9204-b9aa7cf2b18c/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 23.681375,
@@ -278,7 +275,6 @@
             "commandResult": {
               "command": "node",
               "args": ["test/adversarial.test.js"],
-              "cwd": "workspace/.morphscope/runs/9a1479fc-ce87-46f1-9204-b9aa7cf2b18c/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 23.681375,
@@ -525,7 +521,6 @@
         "command": {
           "command": "tsc",
           "args": ["--noEmit"],
-          "cwd": "workspace/.morphscope/runs/109023e6-3660-40f6-9729-7f0a82538c90/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 454.31825,
@@ -540,7 +535,6 @@
             "commandResult": {
               "command": "tsc",
               "args": ["--noEmit"],
-              "cwd": "workspace/.morphscope/runs/109023e6-3660-40f6-9729-7f0a82538c90/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 454.31825,
@@ -740,7 +734,6 @@
         "command": {
           "command": "python3",
           "args": ["-m", "unittest", "discover", "-s", "test"],
-          "cwd": "workspace/.morphscope/runs/5daaba78-1c5d-4461-b33e-75e1f7062d46/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 95.768875,
@@ -755,7 +748,6 @@
             "commandResult": {
               "command": "python3",
               "args": ["-m", "unittest", "discover", "-s", "test"],
-              "cwd": "workspace/.morphscope/runs/5daaba78-1c5d-4461-b33e-75e1f7062d46/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 95.768875,
@@ -955,7 +947,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/adaptive-study/1927ee67-45a5-4ef0-abc9-b06f10f520b8/runs/adaptive-rules-v1/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 229.178333,
@@ -970,7 +961,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/adaptive-study/1927ee67-45a5-4ef0-abc9-b06f10f520b8/runs/adaptive-rules-v1/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 229.178333,
@@ -1391,7 +1381,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/adaptive-study/0f948bc3-7ea1-4591-8fc3-4067ee217ca8/runs/adaptive-rules-v1/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 204.275,
@@ -1406,7 +1395,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/adaptive-study/0f948bc3-7ea1-4591-8fc3-4067ee217ca8/runs/adaptive-rules-v1/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 204.275,
@@ -1827,7 +1815,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/adaptive-study/732c6356-0c57-47a6-8208-1e55f3dd12ba/runs/adaptive-rules-v1/workspace",
           "exitCode": 1,
           "signal": null,
           "durationMs": 205.502875,
@@ -1842,7 +1829,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/adaptive-study/732c6356-0c57-47a6-8208-1e55f3dd12ba/runs/adaptive-rules-v1/workspace",
               "exitCode": 1,
               "signal": null,
               "durationMs": 205.502875,
@@ -5067,7 +5053,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/edit-study/19f6bea8-5703-4f3e-9fdc-9d4c2d4215d0/runs/full-file/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 136.176333,
@@ -5082,7 +5067,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/edit-study/19f6bea8-5703-4f3e-9fdc-9d4c2d4215d0/runs/full-file/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 136.176333,
@@ -5216,7 +5200,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/edit-study/19f6bea8-5703-4f3e-9fdc-9d4c2d4215d0/runs/unified-diff/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 134.113292,
@@ -5231,7 +5214,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/edit-study/19f6bea8-5703-4f3e-9fdc-9d4c2d4215d0/runs/unified-diff/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 134.113292,
@@ -5365,7 +5347,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/edit-study/19f6bea8-5703-4f3e-9fdc-9d4c2d4215d0/runs/deterministic/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 135.215084,
@@ -5380,7 +5361,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/edit-study/19f6bea8-5703-4f3e-9fdc-9d4c2d4215d0/runs/deterministic/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 135.215084,
@@ -5514,7 +5494,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/runs/3e111b86-8bfc-46d2-ac45-bc9c22e05a04/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 151.630333,
@@ -5529,7 +5508,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/runs/3e111b86-8bfc-46d2-ac45-bc9c22e05a04/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 151.630333,
@@ -5729,7 +5707,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/edit-study/9415695d-4d76-4390-a912-f03d12810db4/runs/full-file/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 142.691375,
@@ -5744,7 +5721,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/edit-study/9415695d-4d76-4390-a912-f03d12810db4/runs/full-file/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 142.691375,
@@ -5878,7 +5854,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/edit-study/9415695d-4d76-4390-a912-f03d12810db4/runs/unified-diff/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 143.027542,
@@ -5893,7 +5868,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/edit-study/9415695d-4d76-4390-a912-f03d12810db4/runs/unified-diff/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 143.027542,
@@ -6027,7 +6001,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/edit-study/9415695d-4d76-4390-a912-f03d12810db4/runs/deterministic/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 164.858,
@@ -6042,7 +6015,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/experiments/edit-study/9415695d-4d76-4390-a912-f03d12810db4/runs/deterministic/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 164.858,
@@ -6176,7 +6148,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/runs/a1474255-b231-49a0-8240-bfd38640740b/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 149.91875,
@@ -6191,7 +6162,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/runs/a1474255-b231-49a0-8240-bfd38640740b/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 149.91875,
@@ -6391,7 +6361,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/runs/cp6-check2/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 128.44725,
@@ -6406,7 +6375,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/runs/cp6-check2/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 128.44725,
@@ -6606,7 +6574,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/runs/cp6-check/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 121.630542,
@@ -6621,7 +6588,6 @@
             "commandResult": {
               "command": "npm",
               "args": ["test"],
-              "cwd": "workspace/.morphscope/runs/cp6-check/workspace",
               "exitCode": 0,
               "signal": null,
               "durationMs": 121.630542,
@@ -6932,7 +6898,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/search-study/offline-check/runs/raw-search/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 122.784958,
@@ -7153,7 +7118,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/search-study/8cba4372-ce00-4879-a3ed-6ee334047010/runs/warpgrep/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 144.800208,
@@ -7405,7 +7369,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/search-study/8cba4372-ce00-4879-a3ed-6ee334047010/runs/raw-search/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 123.400541,
@@ -7745,7 +7708,6 @@
         "command": {
           "command": "npm",
           "args": ["test"],
-          "cwd": "workspace/.morphscope/experiments/search-study/3537030f-edf2-4f33-8921-6105f1dbdc46/runs/raw-search/workspace",
           "exitCode": 0,
           "signal": null,
           "durationMs": 151.124583,

@@ -4,4 +4,10 @@
 .env.*
 !.env.example
 node_modules
+.next
+coverage
+*.sqlite
+*.sqlite-*
+*.db
+*.tsbuildinfo
 analysis/output

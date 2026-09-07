@@ -177,7 +177,7 @@ button:disabled {
   transition: transform 160ms var(--ease-instrument);
 }
 
-.skip-link:focus {
+.skip-link:focus-visible {
   transform: translateY(0);
 }
 
