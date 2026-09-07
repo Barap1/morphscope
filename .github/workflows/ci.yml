@@ -1,0 +1,65 @@
+name: MorphScope CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: morphscope-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate workspace
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify workspace metadata
+        run: pnpm workspace:verify
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit and deterministic provider tests
+        run: pnpm test
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: Validate and run offline fixture
+        run: |
+          pnpm morphscope task validate benchmarks/tasks/example.yaml
+          pnpm morphscope run benchmarks/tasks/example.yaml --config baseline
+
+      - name: Generate descriptive analysis artifact
+        run: pnpm morphscope analysis --input .morphscope --output analysis/output/results.json
+
+      - name: Build web application
+        run: pnpm build:web

@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 14
+## Current scope: CHECKPOINT 15
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -177,6 +177,13 @@ files, and provider/spike error artifacts redact known credential formats. The l
 developer-mode process boundary rather than a claim of kernel-level isolation; do not execute
 untrusted repositories with host credentials or broaden the command allowlist without adding an OS
 or container enforcement layer.
+
+Pull requests and pushes to `main` run the proportional GitHub Actions workflow in
+`.github/workflows/ci.yml`. It installs from the frozen lockfile, verifies the workspace, runs
+typecheck/lint/tests/format checks, executes one offline fixture and the descriptive analysis
+pipeline, and builds the web application. It never invokes Morph, Groq, OpenAI, or another external
+provider. Provider tests use deterministic mocked transports; live provider checks remain explicitly
+local/manual and consume no CI quota.
 
 The Morph technical-spike boundary is implemented and live validation is credential-gated.
 After setting `MORPH_API_KEY` in local environment configuration, run:
