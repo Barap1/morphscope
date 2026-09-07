@@ -191,7 +191,7 @@ function ConfigurationRow({
           )}
         />
       </td>
-      <td className="table-number">{storedRun?.run.score ?? "—"}</td>
+      <td className="table-number">{storedRun?.run.score ?? "n/a"}</td>
       <td>
         {storedRun ? (
           <Link
@@ -254,14 +254,14 @@ function Signal({ label, value }: { label: string; value: string }) {
 }
 
 function deltaValue(value: unknown, unit: string): string {
-  if (!isRecord(value)) return "—";
+  if (!isRecord(value)) return "n/a";
   const delta = typeof value.deltaWarpMinusRaw === "number" ? value.deltaWarpMinusRaw : null;
-  if (delta === null) return "—";
+  if (delta === null) return "n/a";
   return `${delta > 0 ? "+" : ""}${delta.toFixed(delta % 1 === 0 ? 0 : 2)}${unit ? ` ${unit}` : ""}`;
 }
 
 function booleanDelta(value: unknown): string {
-  if (!isRecord(value)) return "—";
+  if (!isRecord(value)) return "n/a";
   if (value.rawSearch === null || value.warpGrep === null) return "partial";
   return value.rawSearch === value.warpGrep ? "same outcome" : "diverged";
 }
@@ -283,7 +283,7 @@ function labelFor(state: string): string {
 }
 
 function formatDuration(value: number | null): string {
-  if (value === null) return "—";
+  if (value === null) return "n/a";
   return value < 1_000 ? `${Math.round(value)} ms` : `${(value / 1_000).toFixed(2)} s`;
 }
 

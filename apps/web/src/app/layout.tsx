@@ -4,10 +4,15 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 import { AppShell } from "../components/app-shell";
-import { loadDashboardData } from "../lib/data";
+import { isPublishedDashboard, loadDashboardData } from "../lib/data";
 import "./globals.css";
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "MorphScope",
     template: "%s | MorphScope",
@@ -16,6 +21,26 @@ export const metadata: Metadata = {
   applicationName: "MorphScope",
   referrer: "origin-when-cross-origin",
   keywords: ["coding agents", "evaluation", "traces", "observability"],
+  openGraph: {
+    type: "website",
+    siteName: "MorphScope",
+    title: "MorphScope | See the work between the prompt and the patch.",
+    description: "A trace-first workspace for understanding coding-agent experiments.",
+    images: [
+      {
+        url: "/brand/morphscope-optic.png",
+        width: 1857,
+        height: 847,
+        alt: "An optic instrument with an ember trace line on a dark field.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MorphScope | See the work between the prompt and the patch.",
+    description: "A trace-first workspace for understanding coding-agent experiments.",
+    images: ["/brand/morphscope-optic.png"],
+  },
 };
 
 export const viewport: Viewport = {
@@ -30,6 +55,7 @@ export const dynamic = "force-dynamic";
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const { runs } = loadDashboardData();
   const latestRun = runs[0];
+  const hosted = isPublishedDashboard();
 
   return (
     <html
@@ -44,13 +70,18 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       </head>
       <body>
         <AppShell
+          hosted={hosted}
           workspaceStatus={
             latestRun
               ? {
-                  label: "Latest run",
-                  detail: `${latestRun.run.terminalState} · ${latestRun.run.id.slice(0, 8)}`,
+                  label: hosted ? "Published snapshot" : "Latest run",
+                  detail: hosted
+                    ? `read-only · ${latestRun.run.id.slice(0, 8)}`
+                    : `${latestRun.run.terminalState} · ${latestRun.run.id.slice(0, 8)}`,
                 }
-              : { label: "No persisted run", detail: "Trace store empty" }
+              : hosted
+                ? { label: "Published snapshot", detail: "read-only evidence" }
+                : { label: "No persisted run", detail: "Trace store empty" }
           }
         >
           {children}

@@ -103,6 +103,7 @@ export default async function ExperimentsPage({ searchParams }: { searchParams?:
             id="experiment-search"
             name="q"
             type="search"
+            autoComplete="off"
             placeholder="task, run ID, provider, configuration…"
             defaultValue={query}
           />
@@ -240,6 +241,7 @@ function ExperimentRow({ experiment }: { experiment: ExperimentRecord }) {
       </td>
       <td className="table-number">{experiment.summary.totalRuns}</td>
       <td className="table-number">{percentFormat.format(experiment.summary.resolvedRate)}</td>
+      <td className="table-number">{formatDuration(experiment.summary.medianRuntimeMs)}</td>
     </tr>
   );
 }
@@ -272,7 +274,7 @@ function RunRow({ storedRun }: { storedRun: StoredRun }) {
       </td>
       <td className="table-number">
         {storedRun.run.score === null || storedRun.run.score === undefined
-          ? "—"
+          ? "n/a"
           : storedRun.run.score}
       </td>
       <td className="table-number">{formatDuration(storedRun.run.totalLatency)}</td>
@@ -348,7 +350,7 @@ function labelFor(state: string): string {
 }
 
 function formatDuration(value: number | null): string {
-  if (value === null) return "—";
+  if (value === null) return "n/a";
   return value < 1_000 ? `${Math.round(value)} ms` : `${(value / 1_000).toFixed(2)} s`;
 }
 

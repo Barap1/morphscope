@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 export default function OverviewPage() {
   const { experiments, runs, summary } = loadDashboardData();
   const latest = runs[0];
+  const published = isPublishedDashboard();
   return (
     <div className="overview-page">
       <section className="hero-panel" aria-labelledby="overview-title">
@@ -90,7 +91,7 @@ export default function OverviewPage() {
             <span>DATA SOURCE</span>
             <strong>
               {latest
-                ? isPublishedDashboard()
+                ? published
                   ? "Published read-only snapshot"
                   : "Persisted local trace"
                 : "Awaiting local trace"}
@@ -197,7 +198,9 @@ export default function OverviewPage() {
                   : "Connect a repository, trace store, and provider before creating the first run."}
               </p>
             </div>
-            <Badge variant="steel">LOCAL / NOT CONNECTED</Badge>
+            <Badge variant="steel">
+              {published ? "PUBLISHED / READ-ONLY" : "LOCAL / NOT CONNECTED"}
+            </Badge>
           </div>
           <div className="setup-code">
             <pre className="ui-code-block" data-language="workspace contract" tabIndex={0}>

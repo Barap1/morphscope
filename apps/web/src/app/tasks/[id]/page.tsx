@@ -31,14 +31,14 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
       <div className="metrics-grid">
         <Metric
           label="Repository"
-          value={task?.repository ?? runs[0]?.run.repositoryCommit ?? "—"}
+          value={task?.repository ?? runs[0]?.run.repositoryCommit ?? "n/a"}
           detail="source location"
           icon={<GitBranch size={16} weight="bold" />}
           tone="steel"
         />
         <Metric
           label="Commit"
-          value={task?.commit ?? runs[0]?.run.repositoryCommit ?? "—"}
+          value={task?.commit ?? runs[0]?.run.repositoryCommit ?? "n/a"}
           detail="immutable task source"
           icon={<FileCode size={16} weight="bold" />}
           tone="accent"

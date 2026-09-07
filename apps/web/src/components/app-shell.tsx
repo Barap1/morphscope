@@ -43,9 +43,11 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
 
 export function AppShell({
   children,
+  hosted,
   workspaceStatus,
 }: {
   children: ReactNode;
+  hosted: boolean;
   workspaceStatus: { label: string; detail: string };
 }) {
   const pathname = usePathname() ?? "/";
@@ -146,7 +148,9 @@ export function AppShell({
             </span>
             <span className="sidebar-context-copy">
               <span className="sidebar-context-label">Workspace</span>
-              <span className="sidebar-context-value">Local / default</span>
+              <span className="sidebar-context-value">
+                {hosted ? "Hosted / read-only" : "Local / default"}
+              </span>
             </span>
             <CaretDown size={14} weight="bold" aria-hidden />
           </div>
@@ -198,7 +202,7 @@ export function AppShell({
               </span>
             </div>
             <div className="sidebar-footer-meta">
-              <span>LOCAL WORKSPACE</span>
+              <span>{hosted ? "HOSTED SNAPSHOT" : "LOCAL WORKSPACE"}</span>
               <span className="sidebar-footer-rule" aria-hidden />
               <span>v0.0</span>
             </div>
@@ -263,11 +267,15 @@ export function AppShell({
             <CommandMenu onOpen={() => setMobileOpen(false)} />
             <span className="header-divider" aria-hidden />
             <ThemeToggle />
-            <div className="header-identity" role="group" aria-label="Local workspace identity">
+            <div
+              className="header-identity"
+              role="group"
+              aria-label={hosted ? "Hosted published snapshot" : "Local workspace identity"}
+            >
               <span className="header-identity-mark">MS</span>
               <span className="header-identity-copy">
-                <strong>Local</strong>
-                <small>workspace</small>
+                <strong>{hosted ? "Hosted" : "Local"}</strong>
+                <small>{hosted ? "snapshot" : "workspace"}</small>
               </span>
             </div>
           </div>
@@ -279,7 +287,10 @@ export function AppShell({
 
         <footer className="global-footer">
           <span>
-            <MorphMark compact /> MorphScope / local evaluation workspace
+            <MorphMark compact />
+            {hosted
+              ? " MorphScope / read-only published dashboard"
+              : " MorphScope / local evaluation workspace"}
           </span>
           <span className="footer-capability">
             <ArrowUpRight size={13} weight="bold" aria-hidden /> Trace-first instrumentation

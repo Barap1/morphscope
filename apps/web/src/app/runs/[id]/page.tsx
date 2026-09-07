@@ -304,7 +304,7 @@ function ContextEvidence({ context }: { context: NonNullable<StoredRun["context"
                     : "provider error"}
                 </td>
                 <td className="table-code">
-                  {record.profile ? formatPercent(record.profile.toolOutputShare) : "—"}
+                  {record.profile ? formatPercent(record.profile.toolOutputShare) : "n/a"}
                 </td>
                 <td>
                   <StatusBadge
@@ -520,7 +520,7 @@ function formatTime(value: string): string {
 }
 
 function formatDuration(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
+  if (value === null || !Number.isFinite(value)) return "n/a";
   return value < 1_000 ? `${Math.round(value)} ms` : `${(value / 1_000).toFixed(2)} s`;
 }
 

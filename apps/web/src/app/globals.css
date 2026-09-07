@@ -1116,6 +1116,7 @@ button:disabled {
 }
 
 .ui-metric-value {
+  overflow-wrap: anywhere;
   margin-top: 13px;
   color: var(--paper);
   font-family: var(--font-mono);
@@ -1938,6 +1939,10 @@ button:disabled {
   display: grid;
   align-content: start;
   gap: 18px;
+}
+
+.data-page > * {
+  min-width: 0;
 }
 
 .data-section-gap {
@@ -3464,6 +3469,8 @@ button:disabled {
     display: block;
   }
   .detail-heading-actions {
+    max-width: 100%;
+    flex-wrap: wrap;
     margin-top: 17px;
   }
   .detail-main-panel {

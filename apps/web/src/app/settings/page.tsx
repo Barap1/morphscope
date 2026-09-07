@@ -25,11 +25,16 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="Configure / workspace"
         title="Settings"
-        description="Display preferences are available now. Data connections and execution settings will be added alongside their real implementations."
+        description={
+          published
+            ? "Display preferences are available here. Hosted mode stays read-only and publishes sanitized evidence only."
+            : "Display preferences are available now. Data connections and execution settings will be added alongside their real implementations."
+        }
       />
       <DevelopmentNotice>
-        Only presentation preferences are active. There is no provider, database, or runner
-        connection yet.
+        {published
+          ? "Hosted mode is read-only. Provider and runner connections stay in the local CLI."
+          : "Only presentation preferences are active. There is no provider, database, or runner connection yet."}
       </DevelopmentNotice>
       <div className="settings-grid">
         <Panel className="settings-panel" id="workspace-guide">
