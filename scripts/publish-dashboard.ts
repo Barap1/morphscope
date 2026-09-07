@@ -63,6 +63,9 @@ for (const publishedRun of runsById.values()) {
   const taskId = run && typeof run.taskId === "string" ? run.taskId : null;
   if (taskId) publishedTasks.set(taskId, { id: taskId, ...taskDefinition(taskId) });
 }
+for (const task of taskDefinitions()) {
+  if (typeof task.id === "string") publishedTasks.set(task.id, task);
+}
 const experiments = findFiles(join(morphScopeRoot, "experiments"), "experiment.json")
   .map(readJson)
   .filter(
@@ -378,19 +381,21 @@ function projectTask(value: unknown): JsonRecord {
 }
 
 function taskDefinition(taskId: string): JsonRecord {
+  return taskDefinitions().find((task) => task.id === taskId) ?? { id: taskId };
+}
+
+function taskDefinitions(): JsonRecord[] {
   const taskRoot = join(repositoryRoot, "benchmarks", "tasks");
   let entries: Array<{ name: string; isFile(): boolean }>;
   try {
     entries = readdirSync(taskRoot, { withFileTypes: true, encoding: "utf8" });
   } catch {
-    return { id: taskId };
+    return [];
   }
-  for (const entry of entries) {
-    if (!entry.isFile() || !/\.(?:yaml|yml|json)$/u.test(entry.name)) continue;
-    const definition = readTaskDefinition(join(taskRoot, entry.name));
-    if (definition?.id === taskId) return definition;
-  }
-  return { id: taskId };
+  return entries
+    .filter((entry) => entry.isFile() && /\.(?:yaml|yml|json)$/u.test(entry.name))
+    .map((entry) => readTaskDefinition(join(taskRoot, entry.name)))
+    .filter((definition): definition is JsonRecord => definition !== null);
 }
 
 function readTaskDefinition(sourceFile: string): JsonRecord | null {
