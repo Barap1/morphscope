@@ -40,6 +40,18 @@ export type ReasoningCompletionInput = {
   messages: ReasoningMessage[];
   temperature?: number;
   maxCompletionTokens?: number;
+  responseFormat?:
+    | { type: "json_object" }
+    | {
+        type: "json_schema";
+        json_schema: {
+          name: string;
+          strict: boolean;
+          schema: Record<string, unknown>;
+        };
+      };
+  includeReasoning?: boolean;
+  reasoningEffort?: "low" | "medium" | "high";
 };
 
 export type ReasoningCompletionResult = {

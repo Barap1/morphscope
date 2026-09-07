@@ -53,7 +53,7 @@ describe("SandboxWorkspace", () => {
         "--security-opt=no-new-privileges",
         "--tmpfs",
         "--mount",
-        "type=bind,src=/tmp/morphscope-workspace,dst=/workspace,rw",
+        "type=bind,src=/tmp/morphscope-workspace,dst=/workspace",
       ]),
     );
   });

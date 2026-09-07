@@ -903,7 +903,7 @@ export function dockerRunSecurityArgs(options: DockerRunSecurityOptions): string
     "--tmpfs",
     "/tmp:rw,nosuid,nodev,noexec,size=64m",
     "--mount",
-    `type=bind,src=${options.root},dst=/workspace,rw`,
+    `type=bind,src=${options.root},dst=/workspace`,
     "--workdir",
     `/workspace${options.cwd === "." ? "" : `/${options.cwd}`}`,
     ...dockerUserArgs(),

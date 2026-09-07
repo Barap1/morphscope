@@ -102,6 +102,18 @@ export interface AgentReasoningProvider {
     messages: ReasoningMessage[];
     temperature?: number;
     maxCompletionTokens?: number;
+    responseFormat?:
+      | { type: "json_object" }
+      | {
+          type: "json_schema";
+          json_schema: {
+            name: string;
+            strict: boolean;
+            schema: Record<string, unknown>;
+          };
+        };
+    includeReasoning?: boolean;
+    reasoningEffort?: "low" | "medium" | "high";
   }): Promise<{
     content: string;
     finishReason?: string;
@@ -164,15 +176,18 @@ function checkBudget(
 
 const REASONING_SYSTEM_PROMPT = [
   "You are the coding agent inside MorphScope.",
-  "Solve the task by using only the explicit repository tools below.",
+  "Solve the task by requesting only the explicit repository operations below.",
   "Return exactly one JSON object and no markdown or prose.",
-  'Use one of: {"action":"list_files","path":"."}, {"action":"search","query":"...","path":".","maxResults":20},',
+  'Return one operation object at a time: {"action":"list_files","path":"."}, {"action":"search","query":"...","path":".","maxResults":20},',
   '{"action":"read_file","path":"..."}, {"action":"replace","path":"...","search":"...","replacement":"..."},',
   '{"action":"apply_patch","patch":"unified diff"}, {"action":"command","command":"npm test"},',
   '{"action":"finish","summary":"brief result"}.',
   "Use relative repository paths only. Inspect before editing. Make the smallest correct change.",
-  "Do not invent tool output. Do not request credentials or access outside the workspace.",
+  "Return plain JSON text only. Do not emit function calls, Harmony tool calls, or tool names.",
+  "Do not invent operation results. Do not request credentials or access outside the workspace.",
 ].join("\n");
+
+const REASONING_RESPONSE_FORMAT = { type: "json_object" } as const;
 
 /**
  * A provider-backed coding loop. The model chooses one explicit repository action per turn;
@@ -186,8 +201,10 @@ export async function runReasoningAgent(
   const startedAt = Date.now();
   const outputs: ReasoningAgentResult["outputs"] = [];
   const messages: ReasoningMessage[] = [
-    { role: "system", content: REASONING_SYSTEM_PROMPT },
-    { role: "user", content: `Task issue:\n<issue>\n${options.issue}\n</issue>` },
+    {
+      role: "user",
+      content: `${REASONING_SYSTEM_PROMPT}\n\nTask issue:\n<issue>\n${options.issue}\n</issue>`,
+    },
   ];
   let turns = 0;
   let actionsExecuted = 0;
@@ -248,6 +265,9 @@ export async function runReasoningAgent(
           messages,
           temperature: 0,
           maxCompletionTokens: remainingOutputTokens,
+          responseFormat: REASONING_RESPONSE_FORMAT,
+          includeReasoning: false,
+          reasoningEffort: "low",
         });
         reasoningCalls += 1;
         totalInputTokens += completion.metadata.usage?.inputTokens ?? 0;
@@ -341,7 +361,7 @@ export async function runReasoningAgent(
         outputs.push({ action: action.type, summary });
         messages.push({
           role: "user",
-          content: `<tool_result action="${action.type}">\n${summary}\n</tool_result>`,
+          content: `<operation_result action="${action.type}">\n${summary}\n</operation_result>`,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);

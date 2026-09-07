@@ -47,4 +47,32 @@ describe("GroqClient", () => {
     ).rejects.toMatchObject({ code: "authentication", status: 401 });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
+
+  it("forwards the supported JSON and reasoning controls", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void input;
+      void init;
+      return new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '{"action":"finish"}' }, finish_reason: "stop" }],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    });
+    const client = new GroqClient({ apiKey: "test-key", fetchImpl });
+
+    await client.complete({
+      messages: [{ role: "user", content: "Return JSON." }],
+      responseFormat: { type: "json_object" },
+      includeReasoning: false,
+      reasoningEffort: "low",
+    });
+
+    const request = fetchImpl.mock.calls[0]?.[1] as RequestInit;
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      response_format: { type: "json_object" },
+      include_reasoning: false,
+      reasoning_effort: "low",
+    });
+  });
 });

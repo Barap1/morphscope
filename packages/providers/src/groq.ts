@@ -175,6 +175,11 @@ export class GroqClient implements ReasoningProvider {
           ...(input.maxCompletionTokens !== undefined
             ? { max_completion_tokens: input.maxCompletionTokens }
             : {}),
+          ...(input.responseFormat ? { response_format: input.responseFormat } : {}),
+          ...(input.includeReasoning !== undefined
+            ? { include_reasoning: input.includeReasoning }
+            : {}),
+          ...(input.reasoningEffort ? { reasoning_effort: input.reasoningEffort } : {}),
         }),
         signal: controller.signal,
       });
@@ -216,10 +221,11 @@ export class GroqClient implements ReasoningProvider {
           : response.status === 403 || response.status === 404
             ? "model_unavailable"
             : "http_error";
+      const detail = groqErrorDetail(text);
       throw new GroqProviderError(
         "chat.completions",
         code,
-        "Groq chat completion returned HTTP " + response.status,
+        `Groq chat completion returned HTTP ${response.status}${detail ? `: ${detail}` : ""}`,
         response.status,
         metadata,
       );
@@ -456,4 +462,32 @@ async function readResponseText(response: Response): Promise<string> {
 function safeErrorMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   return String(redactSecrets(message)).slice(0, 512);
+}
+
+function groqErrorDetail(text: string): string | undefined {
+  try {
+    const parsed: unknown = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return undefined;
+    const error = (parsed as JsonRecord).error;
+    if (typeof error !== "object" || error === null || Array.isArray(error)) return undefined;
+    const record = error as JsonRecord;
+    const parts: string[] = [];
+    if (typeof record.code === "string" && record.code.trim().length > 0) parts.push(record.code);
+    if (typeof record.message === "string" && record.message.trim().length > 0)
+      parts.push(record.message);
+    if (
+      typeof record.failed_generation === "object" &&
+      record.failed_generation !== null &&
+      !Array.isArray(record.failed_generation) &&
+      typeof (record.failed_generation as JsonRecord).reason === "string"
+    ) {
+      const reason = (record.failed_generation as JsonRecord).reason as string;
+      if (reason.trim().length > 0) parts.push(reason);
+    }
+    return parts.length > 0
+      ? String(redactSecrets([...new Set(parts)].join("; "))).slice(0, 512)
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
