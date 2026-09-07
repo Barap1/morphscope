@@ -20,6 +20,10 @@ credential or raw provider response.
   including `7` reasoning tokens), then received HTTP `400` with the safe provider detail
   `json_validate_failed`. The overall run is correctly classified as `provider_error` /
   `provider_failure`; a successful multi-turn agent fixture is not claimed.
+- The persisted fixture metadata records MorphScope commit `8ed60fb5d1ed72a8ded4e5e78245fe51699718ea`;
+  this run is retained as evidence that the real agent path reached Groq, not as a current-code
+  end-to-end success claim. No further live calls were made after the bounded adapter smoke and
+  fixture attempt.
 - Retry policy: no retry after the final provider failure. Provider error details are reduced to
   a code/message classification and redacted before persistence.
 
@@ -28,9 +32,11 @@ credential or raw provider response.
 - Existing spike command, using the supplied temporary Morph credential, ran one `compact`
   request: run `cd85bcc2-e253-49e9-980f-bba83d7aa8a7`, trace
   `ca2078cc-d56e-47ad-a2e5-814bc400b4e8`.
-- Result: HTTP `401`, classified as a provider authentication failure. No raw response or
-  credential was persisted. Existing CP4 evidence remains the source for prior WarpGrep and
-  Fast Apply acceptance; this session does not claim fresh success for those components.
+- Result: HTTP `401`, recorded by the adapter as a `http_error` provider failure. This is
+  consistent with an authentication rejection at the HTTP boundary, but the adapter does not
+  claim a narrower machine-level authentication category. No raw response or credential was
+  persisted. Existing CP4 evidence remains the source for prior WarpGrep and Fast Apply
+  acceptance; this session does not claim fresh success for those components.
 
 ## Real-repository and Docker boundary
 
@@ -60,13 +66,15 @@ credential or raw provider response.
   five task definitions used by the dashboard, including all four task IDs with published
   runs. Hosted task pages therefore do not depend on benchmark files being present in the
   Vercel deployment.
-- The existing Vercel project is `barap1s-projects/morphscope`, with the production alias
-  `https://morphscope.vercel.app`. The hosted data path is read-only and uses the committed
-  sanitized snapshot; no provider credentials are required by the web runtime.
-- Targeted HTTPS smoke checks covered the homepage, experiments, one experiment detail, one
-  run detail, task details, comparison, failure explorer, and settings. A published trace route
-  rendered its `Trace replay` surface; comparison rendered the baseline/Morph timeline; and a
-  narrow mobile user-agent request returned HTTP `200` for the homepage.
+- The final Vercel deployment is `dpl_8wB4hKZBavutUFz9zgVrZxMTm462`, status `READY`, in project
+  `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`. The
+  hosted data path is read-only and uses the committed sanitized snapshot; no provider
+  credentials are required by the web runtime.
+- Final targeted HTTPS smoke checks returned HTTP `200` for the homepage, experiments, one
+  experiment detail, one run detail, comparison, failure explorer, settings, and all five
+  published task-contract routes. A published trace route rendered its `Trace replay` surface;
+  comparison rendered the baseline/Morph timeline; and a narrow mobile user-agent request
+  returned HTTP `200` for the homepage.
 - Production safety checks found no provider environment variables in the Vercel production
   environment, no public `/api/run`, `/api/execute`, or `/api/provider` route, and no absolute
   private filesystem paths, bearer tokens, or provider credentials in representative responses.
