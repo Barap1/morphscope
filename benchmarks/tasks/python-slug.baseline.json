@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "actions": [
+    { "type": "list_files" },
+    { "type": "search", "query": "normalize_slug" },
+    { "type": "read_file", "path": "src/slug.py" },
+    {
+      "type": "replace",
+      "path": "src/slug.py",
+      "search": "return value.strip()",
+      "replacement": "return value.strip().lower()",
+      "expectedOccurrences": 1
+    }
+  ]
+}

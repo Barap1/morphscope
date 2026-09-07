@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 11
+## Current scope: CHECKPOINT 12
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -105,6 +105,18 @@ pnpm morphscope experiment run adaptive-study
 version, and reasons in the run artifact and UI. The default fixture stays local and selects
 raw search, deterministic editing, and no compaction; use `--include-morph` only for a
 deliberate provider-backed route when the decision features select one.
+
+The development benchmark catalog is in `benchmarks/tasks/catalog.json` and currently covers
+JavaScript, TypeScript, and Python controlled fixtures plus a clearly marked catalog-only
+real-repository task. Run the descriptive analysis over persisted artifacts with:
+
+```bash
+pnpm morphscope analysis --input .morphscope --output analysis/output/results.json
+```
+
+The report contains raw counts, medians, percentile ranges, task-aligned paired deltas, and
+deterministic bootstrap intervals only when at least ten paired observations exist. Small local
+samples remain explicitly descriptive.
 
 The Morph technical-spike boundary is implemented and live validation is credential-gated.
 After setting `MORPH_API_KEY` in local environment configuration, run:

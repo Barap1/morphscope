@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "actions": [
+    { "type": "list_files" },
+    { "type": "search", "query": "formatLabel" },
+    { "type": "read_file", "path": "src/labels.ts" },
+    {
+      "type": "replace",
+      "path": "src/labels.ts",
+      "search": "return label.trim();",
+      "replacement": "return label.trim().toLowerCase();",
+      "expectedOccurrences": 1
+    }
+  ]
+}

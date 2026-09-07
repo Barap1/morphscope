@@ -1,0 +1,17 @@
+id: python-slug
+repository: benchmarks/fixtures/python-slug
+commit: fixture-v1
+issue: Normalize the slug returned by normalize_slug without changing its trimming behavior.
+setup: python3 --version
+evaluation: python3 -m unittest discover -s test
+resourceLimits:
+  maxDurationMs: 30000
+  maxTurns: 8
+  maxCostUsd: 0
+tags:
+  - fixture
+  - python
+  - bug-fix
+metadata:
+  baselinePlan: benchmarks/tasks/python-slug.baseline.json
+  fixtureVersion: fixture-v1

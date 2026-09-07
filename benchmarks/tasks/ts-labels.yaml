@@ -1,0 +1,17 @@
+id: ts-labels
+repository: benchmarks/fixtures/ts-labels
+commit: fixture-v1
+issue: Normalize the label returned by formatLabel without changing its surrounding whitespace contract.
+setup: tsc --version
+evaluation: tsc --noEmit
+resourceLimits:
+  maxDurationMs: 30000
+  maxTurns: 8
+  maxCostUsd: 0
+tags:
+  - fixture
+  - typescript
+  - sparse-edit
+metadata:
+  baselinePlan: benchmarks/tasks/ts-labels.baseline.json
+  fixtureVersion: fixture-v1
