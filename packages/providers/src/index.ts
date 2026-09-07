@@ -53,6 +53,18 @@ export {
   type EditResult,
   type SyntaxCheck,
 } from "./edit.js";
+export {
+  MorphCompactProvider,
+  NoCompactionProvider,
+  ThresholdTruncationProvider,
+  serializeMessages,
+  type ContextCompactionInput,
+  type ContextCompactionProvider,
+  type ContextCompactionResult,
+  type ContextMessage,
+  type ContextProfile,
+  type ContextRole,
+} from "./context.js";
 
 const DEFAULT_BASE_URL = "https://api.morphllm.com";
 const DEFAULT_TIMEOUT_MS = 120_000;

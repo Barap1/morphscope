@@ -2217,6 +2217,107 @@ button:disabled {
   border-top: 1px solid var(--line);
 }
 
+.context-evidence-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.context-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.context-evidence-grid span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.context-evidence-grid small {
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.context-evidence-grid strong {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-size-bar {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-height: 12px;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line);
+}
+
+.context-size-bar span {
+  display: block;
+  min-height: 4px;
+  border-radius: 999px;
+  background: var(--steel);
+}
+
+.context-size-bar .context-size-bar-after {
+  background: var(--teal);
+}
+
+.context-size-bar i {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 1px;
+  border-left: 1px dashed var(--ember);
+}
+
+.context-evidence-note {
+  margin: -3px 0 0;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.context-snapshots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.context-snapshots details {
+  min-width: 0;
+}
+
+.context-snapshots summary {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px 8px 0 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.context-snapshots details[open] summary {
+  border-color: var(--line-strong);
+  color: var(--ink-soft);
+}
+
+.context-snapshots .ui-code-block {
+  max-height: 330px;
+  overflow: auto;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
+
 .edit-evidence-heading {
   align-items: center;
   justify-content: space-between;
@@ -3237,6 +3338,12 @@ button:disabled {
   }
   .edit-evidence-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .context-evidence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .context-snapshots {
+    grid-template-columns: 1fr;
   }
   .compare-timeline-row {
     grid-template-columns: 22px minmax(0, 1fr) 30px minmax(0, 1fr);

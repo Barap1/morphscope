@@ -160,6 +160,8 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
         </Panel>
       </div>
 
+      {storedRun.context ? <ContextEvidence context={storedRun.context} /> : null}
+
       <div className="split-grid data-section-gap">
         <Panel className="data-panel">
           <div className="section-heading">
@@ -199,6 +201,122 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
         </Panel>
       </div>
     </div>
+  );
+}
+
+function ContextEvidence({ context }: { context: NonNullable<StoredRun["context"]> }) {
+  const final = context.profiles.at(-1);
+  const profile = final?.profile;
+  return (
+    <Panel className="data-panel context-evidence-panel data-section-gap">
+      <div className="section-heading">
+        <div>
+          <span className="section-label">Context accounting</span>
+          <h2>Replayable before / after evidence</h2>
+        </div>
+        <Badge variant={context.downstreamSuccess ? "accent" : "steel"}>
+          {context.profiles.length} observation{context.profiles.length === 1 ? "" : "s"}
+        </Badge>
+      </div>
+      {profile ? (
+        <>
+          <div className="context-evidence-grid">
+            <span>
+              <small>Strategy</small>
+              <strong>{profile.strategy}</strong>
+            </span>
+            <span>
+              <small>Context size</small>
+              <strong>
+                {formatBytes(profile.beforeBytes)} → {formatBytes(profile.afterBytes)}
+              </strong>
+            </span>
+            <span>
+              <small>Retained ratio</small>
+              <strong>{formatPercent(profile.retainedRatio)}</strong>
+            </span>
+            <span>
+              <small>Tool-output share</small>
+              <strong>{formatPercent(profile.toolOutputShare)}</strong>
+            </span>
+            <span>
+              <small>Future calls saved*</small>
+              <strong>{profile.estimatedFutureModelCallsSaved}</strong>
+            </span>
+            <span>
+              <small>Compaction</small>
+              <strong>{formatDuration(profile.latencyMs)}</strong>
+            </span>
+          </div>
+          <div className="context-size-bar" aria-label="Context size before and after compaction">
+            <span
+              style={{ width: `${barWidth(profile.beforeBytes, profile.modelContextLimitBytes)}%` }}
+            />
+            <span
+              className="context-size-bar-after"
+              style={{ width: `${barWidth(profile.afterBytes, profile.modelContextLimitBytes)}%` }}
+            />
+            <i style={{ left: "100%" }} aria-hidden />
+          </div>
+          <p className="context-evidence-note">
+            * Estimated from the configured {profile.modelContextLimitBytes.toLocaleString()}-byte
+            context limit and three future model calls. Information loss: {profile.informationLoss}.
+            Cost metadata: {profile.costUsd === null ? "not reported" : formatCost(profile.costUsd)}
+            .
+            {profile.providerBeforeBytes !== undefined && profile.providerAfterBytes !== undefined
+              ? ` Provider reported ${formatBytes(profile.providerBeforeBytes)} → ${formatBytes(profile.providerAfterBytes)}.`
+              : ""}
+          </p>
+        </>
+      ) : (
+        <div className="data-empty-inline">No successful context profile was persisted.</div>
+      )}
+      <TableShell caption="Context profile over time">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Step</th>
+              <th scope="col">Before → after</th>
+              <th scope="col">Tool share</th>
+              <th scope="col">Outcome</th>
+            </tr>
+          </thead>
+          <tbody>
+            {context.profiles.map((record) => (
+              <tr key={`${record.step}-${record.beforeSha256}`}>
+                <td className="table-code">{record.step}</td>
+                <td className="table-code">
+                  {record.profile
+                    ? `${formatBytes(record.profile.beforeBytes)} → ${formatBytes(record.profile.afterBytes)}`
+                    : "provider error"}
+                </td>
+                <td className="table-code">
+                  {record.profile ? formatPercent(record.profile.toolOutputShare) : "—"}
+                </td>
+                <td>
+                  <StatusBadge
+                    status={record.downstreamSuccess === false ? "failed" : "success"}
+                    label={record.downstreamSuccess === false ? "marker lost" : "recorded"}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TableShell>
+      {final ? (
+        <div className="context-snapshots">
+          <details>
+            <summary>Before context · {formatBytes(final.profile?.beforeBytes ?? 0)}</summary>
+            <CodeBlock language="text" code={final.beforeText} />
+          </details>
+          <details>
+            <summary>After context · {formatBytes(final.profile?.afterBytes ?? 0)}</summary>
+            <CodeBlock language="text" code={final.afterText} />
+          </details>
+        </div>
+      ) : null}
+    </Panel>
   );
 }
 
@@ -356,4 +474,17 @@ function formatCost(value: number): string {
     currency: "USD",
     maximumFractionDigits: 4,
   }).format(value);
+}
+
+function formatBytes(value: number): string {
+  if (value < 1_024) return `${value} B`;
+  return `${(value / 1_024).toFixed(1)} KB`;
+}
+
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function barWidth(value: number, limit: number): number {
+  return Math.max(2, Math.min(100, (value / Math.max(1, limit)) * 100));
 }

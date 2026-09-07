@@ -71,10 +71,60 @@ export type EditRecord = {
   error?: string;
 };
 
+export type ContextProfileRecord = {
+  step: number;
+  label: string;
+  status: string;
+  beforeText: string;
+  afterText: string;
+  beforeSha256: string;
+  afterSha256: string;
+  profile: {
+    strategy: string;
+    provider: string;
+    model: string;
+    beforeBytes: number;
+    afterBytes: number;
+    beforeMessages: number;
+    afterMessages: number;
+    beforeLines: number;
+    afterLines: number;
+    retainedRatio: number;
+    toolOutputBytes: number;
+    toolOutputShare: number;
+    retainedToolOutputBytes: number;
+    retainedToolOutputShare: number;
+    retainedSourceBytes: number;
+    informationLoss: string;
+    informationLossBytes: number | null;
+    estimatedFutureModelCallsSaved: number;
+    estimatedFutureInputBytesSaved: number;
+    modelContextLimitBytes: number;
+    latencyMs: number;
+    costUsd: number | null;
+    providerBeforeBytes?: number;
+    providerAfterBytes?: number;
+    usage: Record<string, unknown> | null;
+    metadata: Record<string, unknown> | null;
+  } | null;
+  downstreamSuccess: boolean | null;
+};
+
+export type ContextRecord = {
+  provider: string;
+  model: string;
+  configuration: string;
+  contextLimitBytes: number;
+  expectedMarker: string;
+  downstreamSuccess: boolean | null;
+  profiles: ContextProfileRecord[];
+};
+
 export type StoredRun = {
   run: Run;
   evaluation: EvaluationRecord | null;
   edit: EditRecord | null;
+  context: ContextRecord | null;
   trace: { spans: TraceSpanRecord[]; events: TraceEventRecord[] };
   search: Record<string, unknown> | null;
   patch: string | null;
@@ -108,6 +158,7 @@ export type ExperimentManifest = {
     id: string;
     searchProvider?: string;
     editProvider?: string;
+    contextProvider?: string;
     runId?: string;
     terminalState?: string;
     search?: Record<string, unknown> | null;
@@ -201,6 +252,7 @@ function readStoredRun(sourceFile: string): StoredRun | null {
     run: parsedRun.data,
     evaluation: isRecord(payload.evaluation) ? (payload.evaluation as EvaluationRecord) : null,
     edit: isRecord(payload.edit) ? (payload.edit as EditRecord) : null,
+    context: isRecord(payload.context) ? (payload.context as ContextRecord) : null,
     trace: {
       spans: Array.isArray(trace.spans) ? (trace.spans as TraceSpanRecord[]) : [],
       events: Array.isArray(trace.events) ? (trace.events as TraceEventRecord[]) : [],
@@ -230,6 +282,9 @@ function readExperiment(
               : {}),
             ...(typeof configuration.editProvider === "string"
               ? { editProvider: configuration.editProvider }
+              : {}),
+            ...(typeof configuration.contextProvider === "string"
+              ? { contextProvider: configuration.contextProvider }
               : {}),
             ...(typeof configuration.runId === "string" ? { runId: configuration.runId } : {}),
             ...(typeof configuration.terminalState === "string"

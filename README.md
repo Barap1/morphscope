@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 9
+## Current scope: CHECKPOINT 10
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -69,6 +69,19 @@ pnpm morphscope experiment run edit-study
 It keeps the original file and evaluation fixed while comparing deterministic, unified-diff,
 and full-file editing. Use `--include-fast-apply` only when a deliberate live Morph call is
 warranted; the Fast Apply endpoint itself was already accepted during CP4.
+
+Context accounting and Compact evaluation are also available offline by default:
+
+```bash
+pnpm morphscope experiment run context-study
+```
+
+This records context size over time, tool-output share, retained ratio, estimated future
+model-call savings, information-loss classification, downstream marker success, latency,
+cost, and replayable before/after context snapshots. The local arms compare no compaction
+with threshold truncation. Use `--include-compact` for one deliberate live Morph Compact
+call; it is final-context-only to preserve the free allowance. Provider output is redacted
+at the persistence boundary and the synthetic context contains no credentials or prompt text.
 
 To run the real TypeScript fixture from a clean disposable workspace:
 
