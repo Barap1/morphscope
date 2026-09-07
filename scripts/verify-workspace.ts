@@ -66,7 +66,7 @@ if (packageManifest) {
   );
   requireEqual(
     scripts.typecheck,
-    "tsc --noEmit --project tsconfig.json && pnpm --filter @morphscope/ui typecheck && pnpm --filter @morphscope/web typecheck",
+    "tsc --noEmit --project tsconfig.json && pnpm --filter @morphscope/schemas typecheck && pnpm --filter @morphscope/tracing typecheck && pnpm --filter @morphscope/storage typecheck && pnpm --filter @morphscope/ui typecheck && pnpm --filter @morphscope/web typecheck",
     "typecheck script",
   );
   requireEqual(scripts["dev:web"], "pnpm --filter @morphscope/web dev", "web dev script");

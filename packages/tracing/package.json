@@ -1,0 +1,18 @@
+{
+  "name": "@morphscope/tracing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --project tsconfig.json"
+  },
+  "dependencies": {
+    "@morphscope/schemas": "workspace:*",
+    "zod": "4.5.4"
+  }
+}

@@ -76,6 +76,34 @@ importers:
         specifier: 6.0.3
         version: 6.0.3
 
+  packages/schemas:
+    dependencies:
+      zod:
+        specifier: ^4.5.4
+        version: 4.5.4
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+
+  packages/storage:
+    dependencies:
+      '@morphscope/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+
+  packages/tracing:
+    dependencies:
+      '@morphscope/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
+
   packages/ui:
     dependencies:
       '@phosphor-icons/react':
