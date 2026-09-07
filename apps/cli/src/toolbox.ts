@@ -1,10 +1,22 @@
-import type { BaselineToolbox } from "@morphscope/agent-core";
+import type { BaselinePlan, BaselineToolbox } from "@morphscope/agent-core";
 import type { LocalWorkspace } from "@morphscope/sandbox";
 
 export type SearchOverride = (
   query: string,
   options?: { path?: string; maxResults?: number },
 ) => string;
+
+export function changedFilesFromPlan(plan: BaselinePlan): string[] {
+  return [
+    ...new Set(
+      plan.actions.flatMap((action) => {
+        if (action.type === "replace") return [action.path];
+        if (action.type !== "apply_patch") return [];
+        return [...action.patch.matchAll(/^\+\+\+ b\/(.+)$/gm)].map((match) => match[1]);
+      }),
+    ),
+  ];
+}
 
 export function createToolbox(
   workspace: LocalWorkspace,

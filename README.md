@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 5
+## Current scope: CHECKPOINT 6
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -98,6 +98,11 @@ deterministic for this checkpoint, so the study measures search differences with
 silently changing the editing strategy or inventing model outcomes. Each arm persists a
 run trace, patch artifact, search-context artifact, provider metadata, and measurement
 manifest under `.morphscope/experiments/search-study/<experiment-id>/`.
+
+Completed runs also persist evaluator analysis: patch statistics, validation results,
+out-of-scope file detection, automatic failure classification, and optional manual
+correction metadata. Environment failures receive no correctness score, so they are not
+counted as incorrect agent solutions during aggregation.
 
 See [`MorphScope_PRD.md`](MorphScope_PRD.md) and [`MorphScope_spec.md`](MorphScope_spec.md)
 for the project requirements and execution specification.

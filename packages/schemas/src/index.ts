@@ -154,6 +154,38 @@ export const FailureCategorySchema = z.enum([
 
 export type FailureCategory = z.infer<typeof FailureCategorySchema>;
 
+export const FailureConfidenceSchema = z.enum(["high", "medium", "low"]);
+export type FailureConfidence = z.infer<typeof FailureConfidenceSchema>;
+
+export const FailureClassificationSchema = z
+  .object({
+    category: FailureCategorySchema.nullable(),
+    confidence: FailureConfidenceSchema,
+    reason: NonEmptyString(8_192),
+  })
+  .strict();
+
+export type FailureClassification = z.infer<typeof FailureClassificationSchema>;
+
+export const ManualFailureCorrectionSchema = z
+  .object({
+    category: FailureCategorySchema.nullable(),
+    reason: NonEmptyString(8_192),
+    correctedAt: TimestampSchema,
+  })
+  .strict();
+
+export type ManualFailureCorrection = z.infer<typeof ManualFailureCorrectionSchema>;
+
+export const AnalysisMetadataSchema = z
+  .object({
+    automatic: FailureClassificationSchema,
+    manualCorrection: ManualFailureCorrectionSchema.nullable(),
+  })
+  .strict();
+
+export type AnalysisMetadata = z.infer<typeof AnalysisMetadataSchema>;
+
 const EnvironmentManifestSchema = z
   .object({
     image: NonEmptyString(512).optional(),
@@ -196,6 +228,7 @@ export const RunSchema = z
     totalCost: NonNegativeNumberSchema,
     score: ScoreSchema.nullable().optional(),
     failureCategory: FailureCategorySchema.nullable().optional(),
+    analysisMetadata: AnalysisMetadataSchema.optional(),
     finalPatchArtifactId: ArtifactReferenceSchema.nullable().optional(),
     artifactIds: z.array(ArtifactReferenceSchema).max(256).optional(),
     environmentManifest: EnvironmentManifestSchema.optional(),

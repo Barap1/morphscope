@@ -7,10 +7,11 @@ import { evaluateTask, type EvaluationResult } from "@morphscope/evaluator";
 import { createLocalWorkspace, type LocalWorkspace } from "@morphscope/sandbox";
 import { RunSchema, type FailureCategory, type TerminalState } from "@morphscope/schemas";
 import { ContentAddressedArtifactStore, SqliteTraceStore } from "@morphscope/storage";
-import { TraceWriter } from "@morphscope/tracing";
+import { TraceWriter, redactText } from "@morphscope/tracing";
+import { persistedEvaluation } from "./persistence.js";
 import { runSearchStudy } from "./search-study.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
-import { createToolbox } from "./toolbox.js";
+import { changedFilesFromPlan, createToolbox } from "./toolbox.js";
 
 type CliOptions = { taskPath: string; config: string; outputPath?: string };
 
@@ -47,14 +48,14 @@ function failureCategory(
   result: EvaluationResult | undefined,
   terminalState: TerminalState,
 ): FailureCategory | null {
-  if (result && !result.passed) return "verification_failure";
+  if (result?.failureClassification.category) return result.failureClassification.category;
   switch (terminalState) {
     case "environment_error":
       return "environment_failure";
     case "budget_exhausted":
       return "budget_exhaustion";
     case "task_failed":
-      return "application_failure";
+      return result && !result.passed ? "verification_failure" : "application_failure";
     case "timeout":
       return "budget_exhaustion";
     default:
@@ -122,6 +123,7 @@ async function main(): Promise<void> {
         throw new Error("task metadata.baselinePlan is required for baseline");
       const planPath = resolve(process.cwd(), planPathValue);
       const plan = readJsonFile<BaselinePlan>(planPath);
+      const validationCommands = validationCommandsFromMetadata(task.metadata);
       const agent = runBaselineAgent({
         toolbox: createToolbox(workspace),
         plan,
@@ -134,6 +136,8 @@ async function main(): Promise<void> {
           task,
           toolbox: createToolbox(workspace),
           timeoutMs: task.resourceLimits.maxDurationMs,
+          allowedChangedFiles: changedFilesFromPlan(plan),
+          validations: validationCommands,
         });
         terminalState = evaluation.terminalState;
       }
@@ -141,7 +145,7 @@ async function main(): Promise<void> {
 
     const diff = workspace.collectDiff().diff;
     const diffArtifact = artifacts.put({
-      content: diff,
+      content: redactText(diff).value,
       mimeType: "text/vnd.git-diff",
       redactionStatus: "redacted-by-trace-boundary",
       producerSpanId: rootSpan.spanId,
@@ -167,6 +171,7 @@ async function main(): Promise<void> {
       totalCost: 0,
       score: evaluation?.score ?? null,
       failureCategory: failureCategory(evaluation, terminalState),
+      analysisMetadata: evaluation?.analysisMetadata,
       finalPatchArtifactId: diffArtifact.sha256,
       artifactIds: [diffArtifact.sha256],
       environmentManifest: {
@@ -189,7 +194,11 @@ async function main(): Promise<void> {
     const snapshot = trace.read();
     writeFileSync(
       join(outputRoot, "run.json"),
-      JSON.stringify({ run, evaluation, trace: snapshot }, null, 2),
+      JSON.stringify(
+        { run, evaluation: persistedEvaluation(evaluation), trace: snapshot },
+        null,
+        2,
+      ),
     );
     console.log(
       JSON.stringify(
@@ -218,6 +227,21 @@ async function main(): Promise<void> {
     workspace?.dispose();
     traceStore.close();
   }
+}
+
+function validationCommandsFromMetadata(metadata: Record<string, unknown>) {
+  return [
+    optionalValidation(metadata.syntaxCommand, "syntax"),
+    optionalValidation(metadata.buildCommand, "build"),
+    optionalValidation(metadata.repositoryTestCommand, "repository"),
+  ].filter(
+    (value): value is { kind: "syntax" | "build" | "repository"; command: string } =>
+      value !== null,
+  );
+}
+
+function optionalValidation(value: unknown, kind: "syntax" | "build" | "repository") {
+  return typeof value === "string" && value.trim().length > 0 ? { kind, command: value } : null;
 }
 
 main().catch((error: unknown) => {

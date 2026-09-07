@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  AnalysisMetadataSchema,
   ArtifactManifestSchema,
   ExperimentSchema,
   RoutingDecisionSchema,
@@ -147,6 +148,23 @@ describe("core schemas", () => {
     expect(
       RunSchema.safeParse({ ...validRun, secretPayload: { token: "redact-me" } }).success,
     ).toBe(false);
+  });
+
+  it("accepts automatic analysis with an optional manual correction", () => {
+    expect(
+      AnalysisMetadataSchema.safeParse({
+        automatic: {
+          category: "verification_failure",
+          confidence: "high",
+          reason: "The required task test failed.",
+        },
+        manualCorrection: {
+          category: "planning_failure",
+          reason: "Reviewer identified an incomplete plan.",
+          correctedAt: timestamp,
+        },
+      }).success,
+    ).toBe(true);
   });
 
   it("rejects malformed spans, including invalid nesting timestamps and payloads", () => {

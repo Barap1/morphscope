@@ -20,7 +20,8 @@ import {
 } from "@morphscope/schemas";
 import { ContentAddressedArtifactStore, SqliteTraceStore } from "@morphscope/storage";
 import { TraceWriter, redactText } from "@morphscope/tracing";
-import { createToolbox } from "./toolbox.js";
+import { persistedEvaluation } from "./persistence.js";
+import { changedFilesFromPlan, createToolbox } from "./toolbox.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
 
 type SearchStudyOptions = {
@@ -240,6 +241,8 @@ async function runConfiguration(input: {
             task,
             toolbox: createToolbox(activeWorkspace),
             timeoutMs: task.resourceLimits.maxDurationMs,
+            allowedChangedFiles: changedFilesFromPlan(plan),
+            validations: validationCommandsFromMetadata(task.metadata),
           });
           terminalState = evaluation.terminalState;
         }
@@ -249,7 +252,7 @@ async function runConfiguration(input: {
 
     const diff = workspace.collectDiff().diff;
     const diffArtifact = artifacts.put({
-      content: diff,
+      content: redactText(diff).value,
       mimeType: "text/vnd.git-diff",
       redactionStatus: "redacted-by-trace-boundary",
       producerSpanId: rootSpan.spanId,
@@ -274,6 +277,7 @@ async function runConfiguration(input: {
       totalCost: 0,
       score: evaluation?.score ?? null,
       failureCategory: failureCategory(evaluation, terminalState),
+      analysisMetadata: evaluation?.analysisMetadata,
       finalPatchArtifactId: diffArtifact.sha256,
       artifactIds: [diffArtifact.sha256],
       environmentManifest: {
@@ -302,7 +306,7 @@ async function runConfiguration(input: {
       JSON.stringify(
         {
           run,
-          evaluation: evaluation ?? null,
+          evaluation: persistedEvaluation(evaluation),
           search: searchResult ? persistedSearchResult(searchResult) : null,
           trace: trace.read(),
         },
@@ -391,7 +395,7 @@ function failureCategory(
   result: EvaluationResult | undefined,
   terminalState: TerminalState,
 ): FailureCategory | null {
-  if (result && !result.passed) return "verification_failure";
+  if (result?.failureClassification.category) return result.failureClassification.category;
   switch (terminalState) {
     case "environment_error":
       return "environment_failure";
@@ -401,7 +405,7 @@ function failureCategory(
     case "timeout":
       return "budget_exhaustion";
     case "task_failed":
-      return "application_failure";
+      return result && !result.passed ? "verification_failure" : "application_failure";
     default:
       return null;
   }
@@ -458,4 +462,19 @@ function morphScopeCommit(): string {
   } catch {
     return "uncommitted-development";
   }
+}
+
+function validationCommandsFromMetadata(metadata: Record<string, unknown>) {
+  return [
+    optionalValidation(metadata.syntaxCommand, "syntax"),
+    optionalValidation(metadata.buildCommand, "build"),
+    optionalValidation(metadata.repositoryTestCommand, "repository"),
+  ].filter(
+    (value): value is { kind: "syntax" | "build" | "repository"; command: string } =>
+      value !== null,
+  );
+}
+
+function optionalValidation(value: unknown, kind: "syntax" | "build" | "repository") {
+  return typeof value === "string" && value.trim().length > 0 ? { kind, command: value } : null;
 }
