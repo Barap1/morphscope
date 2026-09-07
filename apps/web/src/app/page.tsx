@@ -8,7 +8,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { Badge, Metric, Panel, StatusBadge, type StatusName } from "@morphscope/ui";
-import { loadDashboardData } from "../lib/data";
+import { isPublishedDashboard, loadDashboardData } from "../lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +88,13 @@ export default function OverviewPage() {
           </div>
           <div className="observatory-footer">
             <span>DATA SOURCE</span>
-            <strong>{latest ? "Persisted local trace" : "Awaiting local trace"}</strong>
+            <strong>
+              {latest
+                ? isPublishedDashboard()
+                  ? "Published read-only snapshot"
+                  : "Persisted local trace"
+                : "Awaiting local trace"}
+            </strong>
           </div>
         </aside>
       </section>

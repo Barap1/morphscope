@@ -1,0 +1,7 @@
+.morphscope
+.morphscope-data
+.env
+.env.*
+!.env.example
+node_modules
+analysis/output

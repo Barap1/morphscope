@@ -2,6 +2,7 @@ import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSyn
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { aggregateRuns } from "@morphscope/evaluator";
 import { RunSchema, type Run } from "@morphscope/schemas";
+import publishedData from "./published-data.json";
 
 const MAX_JSON_BYTES = 8 * 1024 * 1024;
 
@@ -191,12 +192,17 @@ export type ExperimentRecord = Omit<ExperimentManifest, "task"> & {
 };
 
 export function loadRuns(): StoredRun[] {
+  if (isPublishedDashboard()) return loadPublishedRuns();
   const files = findFiles(morphScopeRoot(), "run.json");
   const storedRuns = files
     .map((file) => readStoredRun(file))
     .filter((run): run is StoredRun => run !== null)
     .sort((left: StoredRun, right: StoredRun) => timestamp(right) - timestamp(left));
-  return storedRuns;
+  return storedRuns.length > 0 ? storedRuns : loadPublishedRuns();
+}
+
+export function isPublishedDashboard(): boolean {
+  return process.env.MORPHSCOPE_HOSTED === "true" || process.env.VERCEL === "1";
 }
 
 export function loadRun(id: string): StoredRun | null {
@@ -277,6 +283,35 @@ function readStoredRun(sourceFile: string): StoredRun | null {
     search: isRecord(payload.search) ? payload.search : null,
     patch: readArtifact(sourceFile, parsedRun.data.finalPatchArtifactId),
     sourceFile,
+  };
+}
+
+function loadPublishedRuns(): StoredRun[] {
+  if (!isRecord(publishedData) || !Array.isArray(publishedData.runs)) return [];
+  return publishedData.runs
+    .map((payload) => readPublishedRun(payload))
+    .filter((run): run is StoredRun => run !== null)
+    .sort((left, right) => timestamp(right) - timestamp(left));
+}
+
+function readPublishedRun(value: unknown): StoredRun | null {
+  if (!isRecord(value)) return null;
+  const parsedRun = RunSchema.safeParse(value.run);
+  if (!parsedRun.success) return null;
+  const trace = isRecord(value.trace) ? value.trace : {};
+  return {
+    run: parsedRun.data,
+    evaluation: isRecord(value.evaluation) ? (value.evaluation as EvaluationRecord) : null,
+    edit: isRecord(value.edit) ? (value.edit as EditRecord) : null,
+    context: isRecord(value.context) ? (value.context as ContextRecord) : null,
+    routing: isRecord(value.routing) ? (value.routing as RoutingRecord) : null,
+    trace: {
+      spans: Array.isArray(trace.spans) ? (trace.spans as TraceSpanRecord[]) : [],
+      events: Array.isArray(trace.events) ? (trace.events as TraceEventRecord[]) : [],
+    },
+    search: isRecord(value.search) ? value.search : null,
+    patch: typeof value.patch === "string" ? value.patch : null,
+    sourceFile: "published://morphscope-demo",
   };
 }
 

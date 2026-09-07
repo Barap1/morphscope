@@ -11,6 +11,7 @@ import { Badge, Panel, StatusBadge } from "@morphscope/ui";
 import { DevelopmentNotice } from "../../components/empty-page";
 import { PageHeader } from "../../components/page-header";
 import { ThemeToggle } from "../../components/theme-toggle";
+import { isPublishedDashboard } from "../../lib/data";
 
 export const metadata = {
   title: "Settings",
@@ -18,6 +19,7 @@ export const metadata = {
 };
 
 export default function SettingsPage() {
+  const published = isPublishedDashboard();
   return (
     <div className="empty-page">
       <PageHeader
@@ -78,14 +80,24 @@ export default function SettingsPage() {
               <Database size={16} weight="bold" aria-hidden />
               <span className="section-label">Data source</span>
             </div>
-            <h2>Local traces only</h2>
-            <p>The shell is ready for a local trace store, but none is connected yet.</p>
+            <h2>{published ? "Published snapshot" : "Local traces only"}</h2>
+            <p>
+              {published
+                ? "This hosted surface displays sanitized, read-only evidence published with the build."
+                : "The shell reads local persisted traces and never creates provider or runner connections from the web UI."}
+            </p>
             <div className="settings-guide">
               <div className="settings-guide-item">
                 <ShieldCheck size={16} weight="bold" aria-hidden />
                 <div>
-                  <strong>Redaction before persistence</strong>
-                  <span>Secrets and provider payloads will be handled by later storage work.</span>
+                  <strong>
+                    {published ? "Sanitized publication" : "Redaction before persistence"}
+                  </strong>
+                  <span>
+                    {published
+                      ? "Provider responses and credentials are not part of the hosted snapshot."
+                      : "Secrets and provider payloads are redacted before local persistence."}
+                  </span>
                 </div>
               </div>
               <div className="settings-guide-item">
@@ -97,7 +109,10 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="ui-empty-action">
-              <StatusBadge status="unavailable" label="Store not connected" />
+              <StatusBadge
+                status={published ? "ready" : "unavailable"}
+                label={published ? "Read-only" : "Local store"}
+              />
             </div>
           </Panel>
           <Panel className="settings-panel">

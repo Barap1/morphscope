@@ -1,0 +1,314 @@
+{
+  "schemaVersion": 1,
+  "runs": [
+    {
+      "run": {
+        "id": "c7df8ec0-8b5e-4d26-9cb3-e8b10e47ffd5",
+        "experimentId": "local-baseline",
+        "taskId": "greeting-punctuation",
+        "configurationId": "baseline",
+        "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+        "repositoryCommit": "fixture-v1",
+        "MorphScopeCommit": "f8f4d4aa2e04c4e320eee4af7a3fc922c4dc8d4a",
+        "provider": "local",
+        "model": "deterministic-baseline",
+        "startedAt": "2026-09-07T16:22:27.760Z",
+        "completedAt": "2026-09-07T16:22:28.017Z",
+        "terminalState": "resolved",
+        "totalLatency": 262,
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalCost": 0,
+        "score": 1,
+        "failureCategory": null,
+        "analysisMetadata": {
+          "automatic": {
+            "category": null,
+            "confidence": "high",
+            "reason": "No failure evidence was recorded."
+          },
+          "manualCorrection": null
+        },
+        "finalPatchArtifactId": "82a07294d654e2a71a861b0103733f32141b38b92b5fc288077690798fb9b0c7",
+        "artifactIds": ["82a07294d654e2a71a861b0103733f32141b38b92b5fc288077690798fb9b0c7"],
+        "environmentManifest": {
+          "platform": "darwin",
+          "runtime": "v24.18.0",
+          "toolVersions": {
+            "node": "v24.18.0"
+          }
+        }
+      },
+      "evaluation": {
+        "passed": true,
+        "score": 1,
+        "terminalState": "resolved",
+        "command": {
+          "command": "npm",
+          "args": ["test"],
+          "cwd": "workspace",
+          "stdout": "\n> test\n> node --test\n\n✔ formats a greeting with punctuation (0.267625ms)\n✔ keeps the caller's name intact (0.046ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 35.922292\n",
+          "stderr": "",
+          "exitCode": 0,
+          "signal": null,
+          "durationMs": 166.135416,
+          "timedOut": false,
+          "truncated": false,
+          "stdoutTruncated": false,
+          "stderrTruncated": false,
+          "stdoutBytes": 235,
+          "stderrBytes": 0,
+          "capturedOutputBytes": 235
+        },
+        "diff": "diff --git a/src/greeting.js b/src/greeting.js\nindex ad1c554..61d776b 100644\n--- a/src/greeting.js\n+++ b/src/greeting.js\n@@ -1,3 +1,3 @@\n export function formatGreeting(name) {\n-  return `Hello ${name}`;\n+  return `Hello ${name}!`;\n }\n",
+        "changedFiles": ["src/greeting.js"],
+        "patchStatistics": {
+          "changedFiles": ["src/greeting.js"],
+          "linesAdded": 1,
+          "linesRemoved": 1,
+          "linesModified": 1,
+          "patchBytes": 235,
+          "outOfScopeFiles": []
+        },
+        "validations": [
+          {
+            "kind": "task",
+            "command": "npm test",
+            "passed": true,
+            "commandResult": {
+              "command": "npm",
+              "args": ["test"],
+              "cwd": "workspace",
+              "stdout": "\n> test\n> node --test\n\n✔ formats a greeting with punctuation (0.267625ms)\n✔ keeps the caller's name intact (0.046ms)\nℹ tests 2\nℹ suites 0\nℹ pass 2\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 35.922292\n",
+              "stderr": "",
+              "exitCode": 0,
+              "signal": null,
+              "durationMs": 166.135416,
+              "timedOut": false,
+              "truncated": false,
+              "stdoutTruncated": false,
+              "stderrTruncated": false,
+              "stdoutBytes": 235,
+              "stderrBytes": 0,
+              "capturedOutputBytes": 235
+            }
+          }
+        ],
+        "failureClassification": {
+          "category": null,
+          "confidence": "high",
+          "reason": "No failure evidence was recorded."
+        },
+        "analysisMetadata": {
+          "automatic": {
+            "category": null,
+            "confidence": "high",
+            "reason": "No failure evidence was recorded."
+          },
+          "manualCorrection": null
+        }
+      },
+      "trace": {
+        "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+        "run": {
+          "runId": "c7df8ec0-8b5e-4d26-9cb3-e8b10e47ffd5",
+          "id": "c7df8ec0-8b5e-4d26-9cb3-e8b10e47ffd5",
+          "experimentId": "local-baseline",
+          "taskId": "greeting-punctuation",
+          "configurationId": "baseline",
+          "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+          "repositoryCommit": "fixture-v1",
+          "MorphScopeCommit": "f8f4d4aa2e04c4e320eee4af7a3fc922c4dc8d4a",
+          "provider": "local",
+          "model": "deterministic-baseline",
+          "startedAt": "2026-09-07T16:22:27.760Z",
+          "completedAt": "2026-09-07T16:22:28.017Z",
+          "terminalState": "resolved",
+          "totalLatency": 262,
+          "totalInputTokens": 0,
+          "totalOutputTokens": 0,
+          "totalCost": 0,
+          "score": 1,
+          "failureCategory": null,
+          "analysisMetadata": {
+            "automatic": {
+              "category": null,
+              "confidence": "high",
+              "reason": "No failure evidence was recorded."
+            },
+            "manualCorrection": null
+          },
+          "finalPatchArtifactId": "82a07294d654e2a71a861b0103733f32141b38b92b5fc288077690798fb9b0c7",
+          "artifactIds": ["82a07294d654e2a71a861b0103733f32141b38b92b5fc288077690798fb9b0c7"],
+          "environmentManifest": {
+            "platform": "darwin",
+            "runtime": "v24.18.0",
+            "toolVersions": {
+              "node": "v24.18.0"
+            }
+          }
+        },
+        "spans": [
+          {
+            "spanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "parentSpanId": null,
+            "type": "run",
+            "start": "2026-09-07T16:22:27.759Z",
+            "end": "2026-09-07T16:22:28.024Z",
+            "status": "ok",
+            "inputArtifactIds": [],
+            "outputArtifactIds": [
+              "82a07294d654e2a71a861b0103733f32141b38b92b5fc288077690798fb9b0c7"
+            ],
+            "tokenUsage": null,
+            "cost": null,
+            "attributes": {
+              "taskId": "greeting-punctuation",
+              "configuration": "baseline"
+            },
+            "error": null
+          },
+          {
+            "spanId": "01e5709a-f4ae-4e76-80cf-410f4b7438c0",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "parentSpanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "type": "tool.list_files",
+            "start": "2026-09-07T16:22:27.822Z",
+            "end": "2026-09-07T16:22:27.828Z",
+            "status": "ok",
+            "inputArtifactIds": [],
+            "outputArtifactIds": [],
+            "tokenUsage": null,
+            "cost": null,
+            "attributes": {
+              "action": "list_files"
+            },
+            "error": null
+          },
+          {
+            "spanId": "3c0da20c-9d6d-49f5-ac48-e2af5a6d6079",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "parentSpanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "type": "tool.search",
+            "start": "2026-09-07T16:22:27.828Z",
+            "end": "2026-09-07T16:22:27.834Z",
+            "status": "ok",
+            "inputArtifactIds": [],
+            "outputArtifactIds": [],
+            "tokenUsage": null,
+            "cost": null,
+            "attributes": {
+              "action": "search"
+            },
+            "error": null
+          },
+          {
+            "spanId": "6a9301d3-f060-44f5-b85a-dc94e7fa9dd6",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "parentSpanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "type": "tool.read_file",
+            "start": "2026-09-07T16:22:27.834Z",
+            "end": "2026-09-07T16:22:27.835Z",
+            "status": "ok",
+            "inputArtifactIds": [],
+            "outputArtifactIds": [],
+            "tokenUsage": null,
+            "cost": null,
+            "attributes": {
+              "action": "read_file"
+            },
+            "error": null
+          },
+          {
+            "spanId": "ce04f9a1-4d9a-43cc-bc5f-579c7d3ca9f4",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "parentSpanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "type": "tool.replace",
+            "start": "2026-09-07T16:22:27.835Z",
+            "end": "2026-09-07T16:22:27.836Z",
+            "status": "ok",
+            "inputArtifactIds": [],
+            "outputArtifactIds": [],
+            "tokenUsage": null,
+            "cost": null,
+            "attributes": {
+              "action": "replace"
+            },
+            "error": null
+          }
+        ],
+        "events": [
+          {
+            "eventId": "ad2481b6-6460-4700-b3b0-019b5bc73570",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "spanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "type": "setup_completed",
+            "occurredAt": "2026-09-07T16:22:27.821Z",
+            "attributes": {
+              "exitCode": 0,
+              "durationMs": 12.52375,
+              "timedOut": false
+            }
+          },
+          {
+            "eventId": "077547df-8f5e-4ff5-8932-ae09fccfcfe2",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "spanId": "01e5709a-f4ae-4e76-80cf-410f4b7438c0",
+            "type": "tool_result",
+            "occurredAt": "2026-09-07T16:22:27.827Z",
+            "attributes": {
+              "action": "list_files",
+              "summary": "[\".morphscope-commit\",\"package.json\",\"src/greeting.js\",\"test/greeting.test.js\"]"
+            }
+          },
+          {
+            "eventId": "1bd90d1b-ea4f-4714-9e20-769e53ae3ccc",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "spanId": "3c0da20c-9d6d-49f5-ac48-e2af5a6d6079",
+            "type": "tool_result",
+            "occurredAt": "2026-09-07T16:22:27.834Z",
+            "attributes": {
+              "action": "search",
+              "summary": "src/greeting.js:1:17:export function formatGreeting(name) {\ntest/greeting.test.js:3:10:import { formatGreeting } from \"../src/greeting.js\";\ntest/greeting.test.js:6:16:  assert.equal(formatGreeting(\"Ada\"), \"Hello Ada!\");\ntest/greeting.test.js:10:16:  assert.equal(formatGreeting(\"Grace Hopper\"), \"Hello Grace Hopper!\");"
+            }
+          },
+          {
+            "eventId": "301278b8-3daa-4f1a-8379-e42f54b1cb94",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "spanId": "6a9301d3-f060-44f5-b85a-dc94e7fa9dd6",
+            "type": "tool_result",
+            "occurredAt": "2026-09-07T16:22:27.835Z",
+            "attributes": {
+              "action": "read_file",
+              "summary": "export function formatGreeting(name) {\n  return `Hello ${name}`;\n}\n"
+            }
+          },
+          {
+            "eventId": "401f8e89-6d8e-49b5-ab0e-3d0a248194ce",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "spanId": "ce04f9a1-4d9a-43cc-bc5f-579c7d3ca9f4",
+            "type": "tool_result",
+            "occurredAt": "2026-09-07T16:22:27.836Z",
+            "attributes": {
+              "action": "replace",
+              "summary": "{\"path\":\"src/greeting.js\",\"replacements\":1,\"changed\":true}"
+            }
+          },
+          {
+            "eventId": "d68e8f7b-b441-49be-bb1d-dfa18074dbda",
+            "traceId": "f93248df-3469-4ec6-a174-866612a6e5bb",
+            "spanId": "cff9163d-42e0-4b5c-b93f-43fb27307706",
+            "type": "run_completed",
+            "occurredAt": "2026-09-07T16:22:28.023Z",
+            "attributes": {
+              "terminalState": "resolved",
+              "score": 1
+            }
+          }
+        ]
+      },
+      "patch": "diff --git a/src/greeting.js b/src/greeting.js\nindex ad1c554..61d776b 100644\n--- a/src/greeting.js\n+++ b/src/greeting.js\n@@ -1,3 +1,3 @@\n export function formatGreeting(name) {\n-  return `Hello ${name}`;\n+  return `Hello ${name}!`;\n }\n"
+    }
+  ]
+}
