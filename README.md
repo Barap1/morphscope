@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 6
+## Current scope: CHECKPOINT 7
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -43,8 +43,19 @@ pnpm dev:web
 pnpm build:web
 ```
 
-The shell can be inspected locally; the offline baseline runner is exercised through the
-CLI while dashboard integration remains a later checkpoint.
+The web dashboard now reads persisted `.morphscope` run, experiment, trace, evaluation,
+and patch artifacts directly. It is dynamically rendered, so a newly completed local
+CLI run appears on the overview, experiment, task, failure, and run-replay views without
+hand-authored dashboard fixtures:
+
+```bash
+pnpm dev:web
+```
+
+Use the overview for the current evidence field, `/experiments` for configuration
+matrices and recorded outcomes, `/tasks/<task-id>` for task-scoped runs, and
+`/runs/<run-id>` for replayable trace, validation, and patch evidence. Empty states stay
+explicit when the local trace store has no records.
 
 To run the real TypeScript fixture from a clean disposable workspace:
 

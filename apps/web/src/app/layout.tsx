@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 import { AppShell } from "../components/app-shell";
+import { loadDashboardData } from "../lib/data";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +25,12 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const { runs } = loadDashboardData();
+  const latestRun = runs[0];
+
   return (
     <html
       lang="en"
@@ -37,7 +43,18 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         </Script>
       </head>
       <body>
-        <AppShell>{children}</AppShell>
+        <AppShell
+          workspaceStatus={
+            latestRun
+              ? {
+                  label: "Latest run",
+                  detail: `${latestRun.run.terminalState} · ${latestRun.run.id.slice(0, 8)}`,
+                }
+              : { label: "No persisted run", detail: "Trace store empty" }
+          }
+        >
+          {children}
+        </AppShell>
       </body>
     </html>
   );

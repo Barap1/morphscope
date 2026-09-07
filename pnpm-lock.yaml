@@ -66,6 +66,12 @@ importers:
 
   apps/web:
     dependencies:
+      '@morphscope/evaluator':
+        specifier: workspace:*
+        version: link:../../packages/evaluator
+      '@morphscope/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@morphscope/ui':
         specifier: workspace:*
         version: link:../../packages/ui

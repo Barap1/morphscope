@@ -7,9 +7,14 @@ import {
 } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import Image from "next/image";
-import { Badge, Panel, StatusBadge } from "@morphscope/ui";
+import { Badge, Metric, Panel, StatusBadge, type StatusName } from "@morphscope/ui";
+import { loadDashboardData } from "../lib/data";
+
+export const dynamic = "force-dynamic";
 
 export default function OverviewPage() {
+  const { experiments, runs, summary } = loadDashboardData();
+  const latest = runs[0];
   return (
     <div className="overview-page">
       <section className="hero-panel" aria-labelledby="overview-title">
@@ -55,21 +60,81 @@ export default function OverviewPage() {
         <aside className="hero-observatory" aria-label="Workspace status">
           <div className="observatory-header">
             <span className="observatory-label">Workspace status</span>
-            <StatusBadge status="unavailable" label="No runs yet" />
+            <StatusBadge
+              status={latest ? statusFor(latest.run.terminalState) : "unavailable"}
+              label={latest ? latest.run.terminalState.replaceAll("_", " ") : "No runs yet"}
+            />
           </div>
           <div className="observatory-viewport">
-            <div className="observatory-aperture" aria-hidden>
-              <span />
-              <span />
-            </div>
-            <div className="observatory-empty-copy">Your first trace will appear here.</div>
+            {latest ? (
+              <div className="observatory-live-card">
+                <span className="observatory-live-kicker">LATEST TRACE</span>
+                <strong>{latest.run.configurationId}</strong>
+                <code>{latest.run.id}</code>
+                <span>
+                  {latest.trace.spans.length} spans ·{" "}
+                  {latest.run.score === null ? "not scored" : `score ${latest.run.score}`}
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="observatory-aperture" aria-hidden>
+                  <span />
+                  <span />
+                </div>
+                <div className="observatory-empty-copy">Your first trace will appear here.</div>
+              </>
+            )}
           </div>
           <div className="observatory-footer">
             <span>DATA SOURCE</span>
-            <strong>Awaiting local trace</strong>
+            <strong>{latest ? "Persisted local trace" : "Awaiting local trace"}</strong>
           </div>
         </aside>
       </section>
+
+      {latest ? (
+        <section className="overview-live-section" aria-labelledby="live-summary-title">
+          <div className="section-heading">
+            <div>
+              <span className="section-label">Workspace signal</span>
+              <h2 id="live-summary-title">The latest evidence is in view.</h2>
+            </div>
+            <Link
+              className="ui-button ui-button-quiet ui-button-sm"
+              href={`/runs/${encodeURIComponent(latest.run.id)}`}
+            >
+              Replay latest trace <ArrowUpRight size={14} weight="bold" aria-hidden />
+            </Link>
+          </div>
+          <div className="metrics-grid">
+            <Metric
+              label="Experiments"
+              value={String(experiments.length)}
+              detail="local manifests"
+              tone="accent"
+            />
+            <Metric
+              label="Runs"
+              value={String(summary.totalRuns)}
+              detail={`${summary.resolvedRuns} resolved`}
+              tone="steel"
+            />
+            <Metric
+              label="Resolved rate"
+              value={`${Math.round(summary.resolvedRate * 100)}%`}
+              detail={`${summary.scoredRuns} scored`}
+              tone="success"
+            />
+            <Metric
+              label="Latest runtime"
+              value={formatDuration(latest.run.totalLatency)}
+              detail={latest.run.taskId}
+              tone="warning"
+            />
+          </div>
+        </section>
+      ) : null}
 
       <section className="capability-grid" aria-labelledby="capabilities-title">
         <h2 id="capabilities-title" className="sr-only">
@@ -115,8 +180,16 @@ export default function OverviewPage() {
                 <span className="eyebrow-marker" aria-hidden />
                 First run guidance
               </p>
-              <h2 id="setup-title">Start with a repository and a task definition.</h2>
-              <p>Connect a repository, trace store, and provider before creating the first run.</p>
+              <h2 id="setup-title">
+                {latest
+                  ? "Keep the evidence close to the source."
+                  : "Start with a repository and a task definition."}
+              </h2>
+              <p>
+                {latest
+                  ? "Every dashboard metric below is derived from persisted run evidence, not presentation fixtures."
+                  : "Connect a repository, trace store, and provider before creating the first run."}
+              </p>
             </div>
             <Badge variant="steel">LOCAL / NOT CONNECTED</Badge>
           </div>
@@ -149,4 +222,14 @@ export default function OverviewPage() {
       </section>
     </div>
   );
+}
+
+function statusFor(state: string): StatusName {
+  if (state === "resolved") return "success";
+  if (state === "provider_error" || state === "environment_error") return "warning";
+  return "failed";
+}
+
+function formatDuration(value: number): string {
+  return value < 1_000 ? `${Math.round(value)} ms` : `${(value / 1_000).toFixed(2)} s`;
 }

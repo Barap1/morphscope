@@ -41,7 +41,13 @@ function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
   }
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  workspaceStatus,
+}: {
+  children: ReactNode;
+  workspaceStatus: { label: string; detail: string };
+}) {
   const pathname = usePathname() ?? "/";
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -187,8 +193,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="sidebar-trace-status">
               <span className="trace-status-dot" aria-hidden />
               <span>
-                <strong>No active run</strong>
-                <small>Trace store offline</small>
+                <strong>{workspaceStatus.label}</strong>
+                <small>{workspaceStatus.detail}</small>
               </span>
             </div>
             <div className="sidebar-footer-meta">

@@ -25,5 +25,6 @@ export type {
   PanelProps,
   SkeletonProps,
   StatusBadgeProps,
+  StatusName,
   TableShellProps,
 } from "./primitives";
