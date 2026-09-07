@@ -25,7 +25,7 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 12
+## Current scope: CHECKPOINT 13
 
 The current vertical slice adds shared schemas, incremental redacted traces, durable
 SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
@@ -117,6 +117,51 @@ pnpm morphscope analysis --input .morphscope --output analysis/output/results.js
 The report contains raw counts, medians, percentile ranges, task-aligned paired deltas, and
 deterministic bootstrap intervals only when at least ten paired observations exist. Small local
 samples remain explicitly descriptive.
+
+The developer workflow is now inspectable from the CLI as well as the dashboard:
+
+```bash
+pnpm morphscope task list
+pnpm morphscope task validate benchmarks/tasks/example.yaml
+pnpm morphscope experiment list --filter adaptive
+pnpm morphscope experiment resume <experiment-id>
+pnpm morphscope trace export <run-id> --output /private/tmp/run-trace.json
+pnpm morphscope results export --format csv --output /private/tmp/results.csv
+pnpm morphscope artifact list <run-id>
+```
+
+`experiment resume` is deliberately idempotent: a completed manifest reports that its linked
+runs are already present and does not create duplicates. Run output directories cannot overwrite
+an existing persisted `run.json`. `run` emits progress on stderr, records an interrupted run as
+`cancelled`, and keeps the trace and patch evidence available for inspection. The web ledger accepts
+`/experiments?q=<term>` for persisted-data filtering, while `/runs/<run-id>` and the equivalent
+`/share/runs/<run-id>` route are read-only, shareable evidence views. Run pages include copyable IDs
+and trace-export commands.
+
+### Adding a task
+
+Add a task definition under `benchmarks/tasks/` and a versioned baseline plan under
+`benchmarks/tasks/` or `benchmarks/fixtures/`. The task must point at a repository, commit,
+setup/evaluation metadata, resource limits, and `metadata.baselinePlan`. Validate it before running:
+
+```bash
+pnpm morphscope task validate benchmarks/tasks/my-task.yaml
+pnpm morphscope run benchmarks/tasks/my-task.yaml --config baseline
+```
+
+Keep the fixture deterministic and small enough for routine local runs. Add the task to
+`benchmarks/tasks/catalog.json` with its language, provenance, and whether it is runnable locally;
+do not describe a catalog-only repository as executed evidence.
+
+### Adding a provider
+
+Implement the existing provider interface in `packages/providers/src/`, keep credentials in an
+ignored local environment file, and record provider/model identity plus latency, status, usage, and
+classified failures in the provider result. Add a deterministic mock test before one deliberate
+live smoke test. Use `GROQ_API_KEY` with `openai/gpt-oss-120b` for reasoning in the current free-tier
+development path; Morph credentials are only for the specialized WarpGrep, Fast Apply, and Compact
+spikes. Do not send one provider's credential to another provider, persist raw provider responses,
+or silently substitute a model in a controlled comparison.
 
 The Morph technical-spike boundary is implemented and live validation is credential-gated.
 After setting `MORPH_API_KEY` in local environment configuration, run:

@@ -95,4 +95,34 @@ describe("runBaselineAgent", () => {
     expect(result.terminalState).toBe("budget_exhausted");
     expect(result.actionsExecuted).toBe(1);
   });
+
+  it("stops cleanly when cancellation is requested", () => {
+    const result = runBaselineAgent({
+      toolbox: {
+        listFiles: () => [],
+        search: () => "",
+        readFile: () => "",
+        replaceFile: () => ({ path: "x", replacements: 0 }),
+        applyPatch: () => ({ files: [] }),
+        runCommand: () => ({
+          command: "true",
+          cwd: ".",
+          exitCode: 0,
+          signal: null,
+          stdout: "",
+          stderr: "",
+          durationMs: 0,
+          timedOut: false,
+          truncated: false,
+        }),
+        gitDiff: () => "",
+      },
+      trace: traceStub(),
+      resourceLimits: { maxTurns: 4 },
+      isCancelled: () => true,
+      plan: { version: 1, actions: [{ type: "list_files" }] },
+    });
+    expect(result.terminalState).toBe("cancelled");
+    expect(result.actionsExecuted).toBe(0);
+  });
 });

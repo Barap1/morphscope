@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { runBaselineAgent, type BaselinePlan } from "@morphscope/agent-core";
@@ -13,6 +13,7 @@ import { runEditStudy } from "./edit-study.js";
 import { runContextStudy } from "./context-study.js";
 import { runAdaptiveStudy } from "./adaptive-study.js";
 import { runAnalysis } from "./analyze.js";
+import { runProductCommand } from "./product.js";
 import { runSearchStudy } from "./search-study.js";
 import { readJsonFile, readTaskFile } from "./task-file.js";
 import { changedFilesFromPlan, createToolbox } from "./toolbox.js";
@@ -73,6 +74,16 @@ async function main(): Promise<void> {
     await runAnalysis(argv);
     return;
   }
+  if (
+    argv[0] === "task" ||
+    (argv[0] === "experiment" && (argv[1] === "list" || argv[1] === "resume")) ||
+    (argv[0] === "trace" && argv[1] === "export") ||
+    (argv[0] === "results" && argv[1] === "export") ||
+    (argv[0] === "artifact" && argv[1] === "list")
+  ) {
+    await runProductCommand(argv);
+    return;
+  }
   if (argv[0] === "experiment") {
     if (argv[2] === "edit-study") await runEditStudy(argv);
     else if (argv[2] === "context-study") await runContextStudy(argv);
@@ -87,6 +98,11 @@ async function main(): Promise<void> {
   const outputRoot = resolve(
     options.outputPath ?? join(process.cwd(), ".morphscope", "runs", runId),
   );
+  if (options.outputPath && existsSync(join(outputRoot, "run.json"))) {
+    throw new Error(
+      `refusing to overwrite existing run at ${outputRoot}; choose a new --output path`,
+    );
+  }
   mkdirSync(outputRoot, { recursive: true });
   const traceStore = new SqliteTraceStore({ filename: join(outputRoot, "trace.sqlite") });
   const artifacts = new ContentAddressedArtifactStore(join(outputRoot, "artifacts"));
@@ -104,6 +120,12 @@ async function main(): Promise<void> {
     | "timeout"
     | "budget_exhausted"
     | "cancelled" = "environment_error";
+  let cancelled = false;
+  const onInterrupt = () => {
+    cancelled = true;
+    console.error("MorphScope cancellation requested; finishing the current safe boundary.");
+  };
+  process.once("SIGINT", onInterrupt);
   const startedAt = new Date().toISOString();
   const startedMs = Date.now();
 
@@ -120,6 +142,7 @@ async function main(): Promise<void> {
         maxCommandOutputBytes: 256_000,
       },
     });
+    console.error(`[morphscope] running ${task.id} (${runId})`);
     const setup = workspace.runSetup(task.setup, task.resourceLimits.maxDurationMs);
     trace.recordEvent(rootSpan.spanId, "setup_completed", {
       exitCode: setup.exitCode,
@@ -140,9 +163,12 @@ async function main(): Promise<void> {
         plan,
         trace,
         resourceLimits: task.resourceLimits,
+        isCancelled: () => cancelled,
       });
       terminalState = agent.terminalState;
-      if (terminalState === "resolved") {
+      if (cancelled) {
+        terminalState = "cancelled";
+      } else if (terminalState === "resolved") {
         evaluation = evaluateTask({
           task,
           toolbox: createToolbox(workspace),
@@ -235,6 +261,7 @@ async function main(): Promise<void> {
     console.error(`MorphScope run failed: ${message}`);
     process.exitCode = 1;
   } finally {
+    process.off("SIGINT", onInterrupt);
     workspace?.dispose();
     traceStore.close();
   }

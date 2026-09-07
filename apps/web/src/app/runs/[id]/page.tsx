@@ -19,6 +19,7 @@ import {
   TableShell,
   type StatusName,
 } from "@morphscope/ui";
+import { CopyButton } from "../../../components/copy-button";
 import { loadExperiments, loadRun, type StoredRun, type TraceSpanRecord } from "../../../lib/data";
 
 export const dynamic = "force-dynamic";
@@ -65,6 +66,17 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
           </p>
         </div>
         <div className="detail-heading-actions">
+          <CopyButton value={run.id} label="Copy run ID" />
+          <CopyButton
+            value={`pnpm morphscope trace export ${run.id}`}
+            label="Copy export command"
+          />
+          <Link
+            className="ui-button ui-button-quiet"
+            href={`/share/runs/${encodeURIComponent(run.id)}`}
+          >
+            Share view
+          </Link>
           <Link className="ui-button ui-button-quiet" href={experimentHref}>
             <ArrowLeft size={15} weight="bold" aria-hidden /> Experiment
           </Link>

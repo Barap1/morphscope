@@ -63,6 +63,7 @@ export interface BaselineAgentOptions {
   plan: BaselinePlan;
   trace: TraceWriter;
   resourceLimits: ResourceLimits;
+  isCancelled?: () => boolean;
 }
 
 export interface BaselineAgentResult {
@@ -73,7 +74,7 @@ export interface BaselineAgentResult {
 }
 
 class BudgetExceeded extends Error {
-  constructor(readonly reason: "timeout" | "budget_exhausted") {
+  constructor(readonly reason: "timeout" | "budget_exhausted" | "cancelled") {
     super(reason);
   }
 }
@@ -83,7 +84,13 @@ function summarize(value: unknown): string {
   return text.length > 2_000 ? `${text.slice(0, 2_000)}…` : text;
 }
 
-function checkBudget(startedAt: number, turns: number, limits: ResourceLimits): void {
+function checkBudget(
+  startedAt: number,
+  turns: number,
+  limits: ResourceLimits,
+  isCancelled?: () => boolean,
+): void {
+  if (isCancelled?.()) throw new BudgetExceeded("cancelled");
   if (limits.maxDurationMs !== undefined && Date.now() - startedAt > limits.maxDurationMs) {
     throw new BudgetExceeded("timeout");
   }
@@ -104,7 +111,7 @@ export function runBaselineAgent(options: BaselineAgentOptions): BaselineAgentRe
 
   try {
     for (const action of options.plan.actions) {
-      checkBudget(startedAt, turns, options.resourceLimits);
+      checkBudget(startedAt, turns, options.resourceLimits, options.isCancelled);
       turns += 1;
       const span = options.trace.startSpan(`tool.${action.type}`, {
         attributes: { action: action.type },

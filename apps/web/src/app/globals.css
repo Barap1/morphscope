@@ -2612,6 +2612,54 @@ button:disabled {
   gap: 14px;
 }
 
+.ledger-search {
+  display: grid;
+  gap: 8px;
+  margin: -2px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  background: var(--canvas-raised);
+}
+
+.ledger-search > label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ledger-search-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ledger-search input {
+  flex: 1;
+  min-height: 34px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  color: var(--ink-soft);
+  background: var(--panel);
+  font: inherit;
+}
+
+.ledger-search input:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+
+.ledger-search-note {
+  margin: 0;
+  color: var(--faint);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
 .compare-selection-panel,
 .compare-first-panel {
   padding: 19px 21px;
@@ -3341,6 +3389,13 @@ button:disabled {
   }
   .compare-selection-form {
     grid-template-columns: 1fr;
+  }
+  .ledger-search-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .ledger-search-controls .ui-button {
+    width: 100%;
   }
   .compare-selection-form .ui-button {
     width: 100%;

@@ -7,16 +7,41 @@ import { loadDashboardData, type ExperimentRecord, type StoredRun } from "../../
 
 export const dynamic = "force-dynamic";
 
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
 const integerFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 const percentFormat = new Intl.NumberFormat("en-US", {
   style: "percent",
   maximumFractionDigits: 0,
 });
 
-export default function ExperimentsPage() {
-  const { experiments, runs, summary } = loadDashboardData();
+export default async function ExperimentsPage({ searchParams }: { searchParams?: SearchParams }) {
+  const { experiments: allExperiments, runs: allRuns } = loadDashboardData();
+  const query = stringQuery((await searchParams) ?? {}, "q");
+  const needle = query.trim().toLowerCase();
+  const experiments = needle
+    ? allExperiments.filter((experiment) =>
+        JSON.stringify(experiment).toLowerCase().includes(needle),
+      )
+    : allExperiments;
+  const runs = needle
+    ? allRuns.filter((storedRun) => JSON.stringify(storedRun).toLowerCase().includes(needle))
+    : allRuns;
+  const resolvedRuns = runs.filter(
+    (storedRun) => storedRun.run.terminalState === "resolved",
+  ).length;
+  const scoredRuns = runs.filter((storedRun) => storedRun.run.score !== null).length;
+  const visibleSummary = {
+    totalRuns: runs.length,
+    resolvedRuns,
+    resolvedRate: runs.length === 0 ? 0 : resolvedRuns / runs.length,
+    scoredRuns,
+    medianRuntimeMs: median(runs.map((storedRun) => storedRun.run.totalLatency)),
+    totalInputTokens: runs.reduce((sum, storedRun) => sum + storedRun.run.totalInputTokens, 0),
+    totalOutputTokens: runs.reduce((sum, storedRun) => sum + storedRun.run.totalOutputTokens, 0),
+  };
 
-  if (experiments.length === 0) {
+  if (allExperiments.length === 0 || experiments.length === 0) {
     return (
       <div className="empty-page">
         <PageHeader
@@ -32,12 +57,26 @@ export default function ExperimentsPage() {
         <EmptyWorkspace
           icon={<Flask size={21} weight="bold" />}
           eyebrow="No persisted experiment"
-          title="Run the fixture to open the ledger."
-          description="The dashboard reads .morphscope run and experiment artifacts directly. No empty metrics are invented while the local store has no records."
+          title={
+            allExperiments.length === 0
+              ? "Run the fixture to open the ledger."
+              : "No matching evidence."
+          }
+          description={
+            allExperiments.length === 0
+              ? "The dashboard reads .morphscope run and experiment artifacts directly. No empty metrics are invented while the local store has no records."
+              : `Nothing matched “${query}”. Search by experiment, task, configuration, provider, or run ID.`
+          }
           action={
-            <Link className="ui-button ui-button-primary" href="/settings#workspace-guide">
-              Review workspace setup
-            </Link>
+            allExperiments.length === 0 ? (
+              <Link className="ui-button ui-button-primary" href="/settings#workspace-guide">
+                Review workspace setup
+              </Link>
+            ) : (
+              <Link className="ui-button ui-button-primary" href="/experiments">
+                Clear search
+              </Link>
+            )
           }
         />
       </div>
@@ -57,6 +96,30 @@ export default function ExperimentsPage() {
         }
       />
 
+      <form className="ledger-search" method="get" action="/experiments">
+        <label htmlFor="experiment-search">Search persisted evidence</label>
+        <div className="ledger-search-controls">
+          <input
+            id="experiment-search"
+            name="q"
+            type="search"
+            placeholder="task, run ID, provider, configuration…"
+            defaultValue={query}
+          />
+          <button className="ui-button ui-button-primary ui-button-sm" type="submit">
+            Filter ledger
+          </button>
+          {needle ? (
+            <Link className="ui-button ui-button-quiet ui-button-sm" href="/experiments">
+              Clear
+            </Link>
+          ) : null}
+        </div>
+        {needle ? (
+          <p className="ledger-search-note">Showing filtered persisted evidence for “{query}”.</p>
+        ) : null}
+      </form>
+
       <div className="metrics-grid">
         <Metric
           label="Experiments"
@@ -67,22 +130,22 @@ export default function ExperimentsPage() {
         />
         <Metric
           label="Recorded runs"
-          value={integerFormat.format(summary.totalRuns)}
-          detail={`${summary.resolvedRuns} resolved`}
+          value={integerFormat.format(visibleSummary.totalRuns)}
+          detail={`${visibleSummary.resolvedRuns} resolved${needle ? " in view" : ""}`}
           icon={<ChartLineUp size={16} weight="bold" />}
           tone="steel"
         />
         <Metric
           label="Resolved rate"
-          value={percentFormat.format(summary.resolvedRate)}
-          detail={`${summary.scoredRuns} scored runs`}
+          value={percentFormat.format(visibleSummary.resolvedRate)}
+          detail={`${visibleSummary.scoredRuns} scored runs`}
           icon={<Scales size={16} weight="bold" />}
           tone="success"
         />
         <Metric
           label="Median runtime"
-          value={formatDuration(summary.medianRuntimeMs)}
-          detail={`${integerFormat.format(summary.totalInputTokens + summary.totalOutputTokens)} tokens`}
+          value={formatDuration(visibleSummary.medianRuntimeMs)}
+          detail={`${integerFormat.format(visibleSummary.totalInputTokens + visibleSummary.totalOutputTokens)} tokens`}
           tone="warning"
         />
       </div>
@@ -177,7 +240,6 @@ function ExperimentRow({ experiment }: { experiment: ExperimentRecord }) {
       </td>
       <td className="table-number">{experiment.summary.totalRuns}</td>
       <td className="table-number">{percentFormat.format(experiment.summary.resolvedRate)}</td>
-      <td className="table-number">{formatDuration(experiment.summary.medianRuntimeMs)}</td>
     </tr>
   );
 }
@@ -297,4 +359,16 @@ function formatDate(value: string): string {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function stringQuery(query: Record<string, string | string[] | undefined>, key: string): string {
+  const value = query[key];
+  return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const ordered = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 0 ? (ordered[middle - 1] + ordered[middle]) / 2 : ordered[middle];
 }
