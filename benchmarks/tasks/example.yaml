@@ -1,0 +1,16 @@
+id: greeting-punctuation
+repository: benchmarks/fixtures/buggy-greeting
+commit: fixture-v1
+issue: Add the missing punctuation to the greeting returned by formatGreeting without changing the caller's name.
+setup: node --version
+evaluation: npm test
+resourceLimits:
+  maxDurationMs: 30000
+  maxTurns: 8
+  maxCostUsd: 0
+tags:
+  - fixture
+  - javascript
+metadata:
+  baselinePlan: benchmarks/tasks/example.baseline.json
+  fixtureVersion: fixture-v1

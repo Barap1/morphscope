@@ -25,12 +25,12 @@ pnpm format:check
 `pnpm install` uses the versions declared in the root manifest. Provider credentials are
 optional during bootstrap; see `.env.example` before running provider-backed experiments.
 
-## Current scope: CHECKPOINT 1
+## Current scope: CHECKPOINT 3
 
-The current checkpoint establishes the MorphScope web shell, responsive navigation,
-command menu, theme support, visual tokens, and reusable UI primitives. It includes
-honest empty states for the initial routes. Runner, persistence, provider integrations,
-traces, benchmark runs, and metrics are intentionally not part of this checkpoint.
+The current vertical slice adds shared schemas, incremental redacted traces, durable
+SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, and a
+deterministic offline baseline runner. The web shell remains honest about the fact that
+dashboard pages are not yet connected to these persisted runs.
 
 To work on the web shell:
 
@@ -39,8 +39,19 @@ pnpm dev:web
 pnpm build:web
 ```
 
-The shell can be inspected locally, but it does not claim that future execution or
-trace-backed capabilities are connected yet.
+The shell can be inspected locally; the CP3 runner is exercised through the CLI while
+dashboard integration remains a later checkpoint.
+
+To run the real TypeScript fixture from a clean disposable workspace:
+
+```bash
+pnpm morphscope run benchmarks/tasks/example.yaml --config baseline
+```
+
+The command writes a structured `run.json`, SQLite trace, and content-addressed Git diff
+under `.morphscope/runs/<run-id>/`. The baseline is intentionally deterministic and
+offline for this checkpoint; it exercises real search, read, edit, setup, and evaluation
+commands without claiming model-provider results.
 
 No benchmark results or experimental findings are claimed yet. All future results must
 come from real repository execution and be accompanied by their methodology and limits.

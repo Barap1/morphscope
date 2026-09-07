@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "actions": [
+    { "type": "list_files" },
+    { "type": "search", "query": "formatGreeting" },
+    { "type": "read_file", "path": "src/greeting.js" },
+    {
+      "type": "replace",
+      "path": "src/greeting.js",
+      "search": "return `Hello ${name}`;",
+      "replacement": "return `Hello ${name}!`;",
+      "expectedOccurrences": 1
+    }
+  ]
+}

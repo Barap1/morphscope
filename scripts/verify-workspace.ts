@@ -66,13 +66,13 @@ if (packageManifest) {
   );
   requireEqual(
     scripts.typecheck,
-    "tsc --noEmit --project tsconfig.json && pnpm --filter @morphscope/schemas typecheck && pnpm --filter @morphscope/tracing typecheck && pnpm --filter @morphscope/storage typecheck && pnpm --filter @morphscope/ui typecheck && pnpm --filter @morphscope/web typecheck",
+    "tsc --noEmit --project tsconfig.json && pnpm --filter @morphscope/schemas typecheck && pnpm --filter @morphscope/tracing typecheck && pnpm --filter @morphscope/storage typecheck && pnpm --filter @morphscope/agent-core typecheck && pnpm --filter @morphscope/sandbox typecheck && pnpm --filter @morphscope/evaluator typecheck && pnpm --filter @morphscope/ui typecheck && pnpm --filter @morphscope/web typecheck && pnpm --filter @morphscope/cli typecheck",
     "typecheck script",
   );
   requireEqual(scripts["dev:web"], "pnpm --filter @morphscope/web dev", "web dev script");
   requireEqual(scripts["build:web"], "pnpm --filter @morphscope/web build", "web build script");
   requireEqual(scripts.lint, "eslint . --max-warnings 0", "lint script");
-  requireEqual(scripts.test, "vitest run --passWithNoTests", "test script");
+  requireEqual(scripts.test, "vitest run --passWithNoTests packages apps", "test script");
   requireEqual(scripts["format:check"], "prettier --check .", "format check script");
 
   const expectedDevelopmentDependencies: Record<string, string> = {
