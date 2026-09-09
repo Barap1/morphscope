@@ -164,7 +164,7 @@ writeFileSync(
         sourceCommit,
         runCount: runsById.size,
         experimentCount: experiments.length,
-        note: "Generated from persisted MorphScope traces; hosted mode is read-only.",
+        note: "Generated from persisted MorphScope traces; public pages use this snapshot while authenticated workspace records are stored separately.",
       },
       runs: [...runsById.values()].sort((left, right) => timestamp(right) - timestamp(left)),
       tasks: [...publishedTasks.values()].sort((left, right) =>

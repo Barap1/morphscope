@@ -102,7 +102,7 @@ export default function OverviewPage() {
             <strong>
               {latest
                 ? published
-                  ? "Published read-only snapshot"
+                  ? "Published public snapshot"
                   : "Persisted local trace"
                 : "Awaiting local trace"}
             </strong>

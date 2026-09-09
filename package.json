@@ -13,6 +13,7 @@
     "morphscope:morph-spike": "tsx apps/cli/src/morph-spike.ts",
     "morphscope:groq-smoke": "tsx apps/cli/src/groq-smoke.ts",
     "publish:dashboard": "tsx scripts/publish-dashboard.ts",
+    "workspace:auth-hash": "tsx scripts/create-workspace-password.ts",
     "build": "pnpm --filter @morphscope/web build",
     "build:web": "pnpm --filter @morphscope/web build",
     "workspace:verify": "node scripts/verify-workspace.ts",

@@ -22,6 +22,7 @@ import {
 } from "../lib/navigation";
 import { BrandLockup, MorphMark } from "./brand-mark";
 import { CommandMenu } from "./command-menu";
+import { SignOutButton } from "./sign-out-button";
 import { ThemeToggle } from "./theme-toggle";
 
 function NavigationGlyph({ icon }: { icon: NavigationIcon }) {
@@ -45,10 +46,12 @@ export function AppShell({
   children,
   hosted,
   workspaceStatus,
+  workspaceAccess,
 }: {
   children: ReactNode;
   hosted: boolean;
   workspaceStatus: { label: string; detail: string };
+  workspaceAccess: "unavailable" | "signed-out" | "signed-in";
 }) {
   const pathname = usePathname() ?? "/";
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -149,7 +152,11 @@ export function AppShell({
             <span className="sidebar-context-copy">
               <span className="sidebar-context-label">Workspace</span>
               <span className="sidebar-context-value">
-                {hosted ? "Hosted / read-only" : "Local / default"}
+                {hosted
+                  ? workspaceAccess === "signed-in"
+                    ? "Hosted / editable"
+                    : "Hosted / snapshot"
+                  : "Local / default"}
               </span>
             </span>
             <CaretDown size={14} weight="bold" aria-hidden />
@@ -267,6 +274,13 @@ export function AppShell({
             <CommandMenu onOpen={() => setMobileOpen(false)} />
             <span className="header-divider" aria-hidden />
             <ThemeToggle />
+            {workspaceAccess === "signed-in" ? (
+              <SignOutButton />
+            ) : workspaceAccess === "signed-out" ? (
+              <Link className="ui-button ui-button-quiet ui-button-sm" href="/login">
+                Sign in to edit
+              </Link>
+            ) : null}
             <div
               className="header-identity"
               role="group"
@@ -289,7 +303,9 @@ export function AppShell({
           <span>
             <MorphMark compact />
             {hosted
-              ? " MorphScope / read-only published dashboard"
+              ? workspaceAccess === "signed-in"
+                ? " MorphScope / authenticated workspace"
+                : " MorphScope / public evidence snapshot"
               : " MorphScope / local evaluation workspace"}
           </span>
           <span className="footer-capability">

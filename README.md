@@ -13,10 +13,11 @@ that score: repository search, context, reasoning turns, edits, routing decision
 and cost. That makes configuration comparisons and failure analysis inspectable instead of
 anecdotal.
 
-The hosted dashboard is a read-only view over an explicitly published, sanitized snapshot. Its
-counts are descriptive evidence from the checked-in fixture set, not a claim of benchmark
-generality. The full runner, Docker sandbox, and provider-backed workflows remain available as
-local developer tooling.
+The public hosted dashboard is a view over an explicitly published, sanitized snapshot. Sign in to
+the private workspace to create and edit experiment, task, and run records; those records are
+stored in Postgres and never execute repositories. Counts in the public snapshot are descriptive
+evidence from the checked-in fixture set, not a claim of benchmark generality. The full runner,
+Docker sandbox, and provider-backed workflows remain available as local developer tooling.
 
 ## What you can see
 
@@ -43,10 +44,12 @@ the replay and comparison surfaces.
 
 ## Live demo
 
-[Open MorphScope](https://morphscope.vercel.app) to inspect the current hosted evidence. Hosted mode
-does not execute repositories, call providers, access local SQLite, or mutate dashboard data. The
-snapshot is generated from an allowlisted set of persisted traces and should be read as a
-technical walkthrough of the instrumentation, not as a statistically general benchmark result.
+[Open MorphScope](https://morphscope.vercel.app) to inspect the current hosted evidence. Public mode
+does not execute repositories, call providers, or access local SQLite. The private workspace
+control plane can manage metadata records after sign-in, but does not execute agents or mutate
+repositories. The public snapshot is generated from an allowlisted set of persisted traces and
+should be read as a technical walkthrough of the instrumentation, not as a statistically general
+benchmark result.
 
 ## Quickstart
 
@@ -109,10 +112,32 @@ persisted runs, constrains them to the same task by default, and shows aligned t
 first-divergence markers, measured deltas, technical span details, patches, and
 verification outcomes. The experiment detail page links directly into a recorded pair.
 
-To prepare a hosted read-only snapshot, run `pnpm publish:dashboard`. Publication is explicit:
+To prepare a hosted public snapshot, run `pnpm publish:dashboard`. Publication is explicit:
 only run IDs listed in `scripts/published-run-allowlist.json` are selected, known dashboard fields
 are projected, and paths/credential-shaped values are sanitized. New local traces are not published
 implicitly.
+
+To enable authenticated workspace record management on the deployed app, provision a Postgres
+database through the Vercel Marketplace (Neon is the supported connection), then configure these
+server-only production variables:
+
+```text
+DATABASE_URL
+MORPHSCOPE_SESSION_SECRET
+MORPHSCOPE_WORKSPACE_PASSWORD_HASH
+```
+
+Generate the password hash without writing the password to the repository:
+
+```bash
+pnpm workspace:auth-hash
+openssl rand -base64 32
+```
+
+Set the generated values with `vercel env add` or the Vercel project settings, then redeploy. The
+first authenticated request creates the small workspace table automatically. CRUD is limited to
+validated task, experiment, and run metadata; provider credentials and runner execution remain
+local-only.
 
 From an authenticated checkout, deploy the existing dashboard project with:
 

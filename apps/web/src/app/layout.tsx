@@ -5,6 +5,7 @@ import { GeistSans } from "geist/font/sans";
 import type { ReactNode } from "react";
 import { AppShell } from "../components/app-shell";
 import { isPublishedDashboard, loadDashboardData } from "../lib/data";
+import { hasWorkspaceSession, workspaceAuthConfigured } from "../lib/workspace-auth";
 import "./globals.css";
 
 const siteUrl =
@@ -56,10 +57,15 @@ export const viewport: Viewport = {
 
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const { runs } = loadDashboardData();
   const latestRun = runs[0];
   const hosted = isPublishedDashboard();
+  const workspaceAccess = workspaceAuthConfigured()
+    ? (await hasWorkspaceSession())
+      ? "signed-in"
+      : "signed-out"
+    : "unavailable";
 
   return (
     <html
@@ -75,16 +81,23 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <AppShell
           hosted={hosted}
+          workspaceAccess={workspaceAccess}
           workspaceStatus={
             latestRun
               ? {
                   label: hosted ? "Published snapshot" : "Latest run",
                   detail: hosted
-                    ? `read-only · ${latestRun.run.id.slice(0, 8)}`
+                    ? `${workspaceAccess === "signed-in" ? "editable workspace" : "public snapshot"} · ${latestRun.run.id.slice(0, 8)}`
                     : `${latestRun.run.terminalState} · ${latestRun.run.id.slice(0, 8)}`,
                 }
               : hosted
-                ? { label: "Published snapshot", detail: "read-only evidence" }
+                ? {
+                    label: "Published snapshot",
+                    detail:
+                      workspaceAccess === "signed-in"
+                        ? "workspace access enabled"
+                        : "public evidence",
+                  }
                 : { label: "No persisted run", detail: "Trace store empty" }
           }
         >
