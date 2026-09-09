@@ -115,12 +115,13 @@ only live multi-turn result.
   five task definitions used by the dashboard, including all four task IDs with published
   runs. Hosted task pages therefore do not depend on benchmark files being present in the
   Vercel deployment.
-- The earlier release-candidate deployment was `dpl_b9hxrwQzH1MVDN2ovBfzrgL1CrY6`. The current
-  exact-head production deployment is `dpl_42waCAy1Dk12xoBYcGn441EjPvjz`, status `READY`, in
-  project `barap1s-projects/morphscope`, with production alias
-  `https://morphscope.vercel.app`. Vercel records source commit
-  `b2eb6c9848e79ca67ae227ec15f0e075c32a8abb`. The hosted data path is read-only and uses the
-  committed sanitized snapshot; no provider credentials are required by the web runtime.
+- Earlier release-candidate deployments were `dpl_b9hxrwQzH1MVDN2ovBfzrgL1CrY6` and
+  `dpl_42waCAy1Dk12xoBYcGn441EjPvjz`. The latest deployment verified while recording this
+  evidence is `dpl_FqiPQGao3dtxgXNtizYDbUtF2o1h`, status `READY`, in project
+  `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`.
+  Vercel records source commit `f9f21baa64fa0bafa13e62c1ed7487b59b33713d`. The hosted data path
+  is read-only and uses the committed sanitized snapshot; no provider credentials are required by
+  the web runtime.
 - Final browser route smoke checks covered the homepage, experiments, one experiment detail, one
   task, one run detail, comparison, failure explorer, settings, and the shareable run route. All
   9 routes rendered without a not-found heading; the shareable route resolved to the canonical run
