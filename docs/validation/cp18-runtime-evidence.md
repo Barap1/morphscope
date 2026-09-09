@@ -115,9 +115,9 @@ only live multi-turn result.
   five task definitions used by the dashboard, including all four task IDs with published
   runs. Hosted task pages therefore do not depend on benchmark files being present in the
   Vercel deployment.
-- The final Vercel deployment is `dpl_Eodd7aAbnv61AfXhuvgRqWKTTgpP`, status `READY`, in project
+- The final Vercel deployment is `dpl_b9hxrwQzH1MVDN2ovBfzrgL1CrY6`, status `READY`, in project
   `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`. It was
-  deployed from release-candidate commit `74f88dc6936b877bec6492a3537a6fe40fab3b35`. The hosted
+  deployed from release-candidate commit `ea2c5d1`. The hosted
   data path is read-only and uses the committed sanitized snapshot; no provider credentials are
   required by the web runtime.
 - Final browser route smoke checks covered the homepage, experiments, one experiment detail, one
