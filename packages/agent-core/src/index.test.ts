@@ -137,6 +137,7 @@ describe("runBaselineAgent", () => {
 describe("runReasoningAgent", () => {
   it("lets a provider choose constrained tools and records usage", async () => {
     const calls: string[] = [];
+    const inputs: Array<Parameters<AgentReasoningProvider["complete"]>[0]> = [];
     const toolbox: BaselineToolbox = {
       listFiles: () => ["src/greeting.js"],
       search: () => "src/greeting.js:1:1:return greeting",
@@ -169,16 +170,19 @@ describe("runReasoningAgent", () => {
     const reasoning: AgentReasoningProvider = {
       provider: "groq",
       model: "openai/gpt-oss-120b",
-      complete: vi.fn(async () => ({
-        content: responses.shift() ?? '{"action":"finish"}',
-        metadata: {
-          provider: "groq",
-          model: "openai/gpt-oss-120b",
-          status: 200,
-          latencyMs: 4,
-          usage: { inputTokens: 10, outputTokens: 6, totalTokens: 16 },
-        },
-      })),
+      complete: vi.fn(async (input: Parameters<AgentReasoningProvider["complete"]>[0]) => {
+        inputs.push({ ...input, messages: input.messages.map((message) => ({ ...message })) });
+        return {
+          content: responses.shift() ?? '{"action":"finish"}',
+          metadata: {
+            provider: "groq",
+            model: "openai/gpt-oss-120b",
+            status: 200,
+            latencyMs: 4,
+            usage: { inputTokens: 10, outputTokens: 6, totalTokens: 16 },
+          },
+        };
+      }),
     };
 
     const result = await runReasoningAgent({
@@ -196,6 +200,13 @@ describe("runReasoningAgent", () => {
     expect(result.totalInputTokens).toBe(50);
     expect(result.totalOutputTokens).toBe(30);
     expect(calls).toEqual(["replace:src/greeting.js"]);
+    expect(inputs).toHaveLength(5);
+    expect(inputs[0]?.responseFormat).toMatchObject({
+      type: "json_schema",
+      json_schema: { name: "morphscope_repository_operation", strict: true },
+    });
+    expect(inputs[1]?.messages.map(({ role }) => role)).toEqual(["user", "assistant", "user"]);
+    expect(inputs[1]?.messages[2]?.content).toContain('<operation_result action="search">');
   });
 
   it("enforces a nominal cost budget when billed cost is absent", async () => {

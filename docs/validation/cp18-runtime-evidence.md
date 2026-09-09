@@ -1,6 +1,6 @@
 # CP18 runtime evidence
 
-Date: 2026-09-07
+Date: 2026-09-08
 
 This file records the focused post-CP18 release-hardening checks. It contains no provider
 credential or raw provider response.
@@ -26,6 +26,55 @@ credential or raw provider response.
   fixture attempt.
 - Retry policy: no retry after the final provider failure. Provider error details are reduced to
   a code/message classification and redacted before persistence.
+
+### Multi-turn protocol correction
+
+The failure was investigated against the current Groq documentation for [JSON Object
+Mode](https://console.groq.com/docs/json-mode), [Structured
+Outputs](https://console.groq.com/docs/structured-outputs), and [GPT-OSS
+reasoning](https://console.groq.com/docs/reasoning). GPT-OSS supports strict JSON Schema output;
+the earlier request used the older JSON Object Mode while carrying a custom host-controlled
+operation history. MorphScope does not enable provider-native agent tools: repository operations
+remain explicit host actions, and their bounded results are returned as the next user message.
+
+The smallest correction is now in `packages/agent-core/src/index.ts`:
+
+- every reasoning request uses one closed, strict `json_schema` named
+  `morphscope_repository_operation`;
+- the schema requires `action` and `args`, with operation-specific closed argument objects and
+  explicit `null` values for optional arguments;
+- the second request preserves the original user message, the assistant's JSON operation, and a
+  redacted `<operation_result>` user message;
+- `include_reasoning: false` and `reasoning_effort: low` remain explicit, while the existing output
+  token budget is preserved.
+
+Redacted structural comparison from the deterministic protocol tests:
+
+```text
+request 1
+  messages: [user(task + protocol instructions)]
+  response_format: { type: json_schema, json_schema: { name: morphscope_repository_operation,
+                   strict: true, schema: [closed action/args union] } }
+  include_reasoning: false
+  reasoning_effort: low
+  max_completion_tokens: computed from remaining budget
+
+request 2
+  messages: [user(task + protocol instructions),
+             assistant(redacted JSON operation),
+             user(<operation_result action="search">[redacted bounded result]</operation_result>)]
+  response_format: same strict schema
+  include_reasoning: false
+  reasoning_effort: low
+  max_completion_tokens: computed from remaining budget
+```
+
+The regression coverage is deterministic and provider-free: `CI=true pnpm vitest run
+packages/agent-core packages/providers` passed `35` tests, including agent assertions for the
+strict schema and preserved operation-result history and provider assertions for exact two-turn
+request forwarding. No post-correction live Groq acceptance is claimed in this checkout because
+the current environment has no `GROQ_API_KEY`; the prior `json_validate_failed` run remains the
+only live multi-turn result.
 
 ## Morph
 

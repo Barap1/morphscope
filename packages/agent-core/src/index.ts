@@ -177,17 +177,106 @@ function checkBudget(
 const REASONING_SYSTEM_PROMPT = [
   "You are the coding agent inside MorphScope.",
   "Solve the task by requesting only the explicit repository operations below.",
-  "Return exactly one JSON object and no markdown or prose.",
-  'Return one operation object at a time: {"action":"list_files","path":"."}, {"action":"search","query":"...","path":".","maxResults":20},',
-  '{"action":"read_file","path":"..."}, {"action":"replace","path":"...","search":"...","replacement":"..."},',
-  '{"action":"apply_patch","patch":"unified diff"}, {"action":"command","command":"npm test"},',
-  '{"action":"finish","summary":"brief result"}.',
+  "Return exactly one JSON object and no markdown or prose. Put operation arguments inside args.",
+  'Examples: {"action":"list_files","args":{"path":"."}}, {"action":"search","args":{"query":"...","path":".","maxResults":20}},',
+  '{"action":"read_file","args":{"path":"...","startLine":null,"endLine":null}},',
+  '{"action":"replace","args":{"path":"...","search":"...","replacement":"...","expectedOccurrences":null}},',
+  '{"action":"apply_patch","args":{"patch":"unified diff"}}, {"action":"command","args":{"command":"npm test","timeoutMs":null}},',
+  '{"action":"finish","args":{"summary":"brief result"}}.',
+  "Use null for optional arguments that do not apply to the selected operation.",
   "Use relative repository paths only. Inspect before editing. Make the smallest correct change.",
   "Return plain JSON text only. Do not emit function calls, Harmony tool calls, or tool names.",
   "Do not invent operation results. Do not request credentials or access outside the workspace.",
 ].join("\n");
 
-const REASONING_RESPONSE_FORMAT = { type: "json_object" } as const;
+const REASONING_RESPONSE_FORMAT = {
+  type: "json_schema" as const,
+  json_schema: {
+    name: "morphscope_repository_operation",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: [
+            "list_files",
+            "search",
+            "read_file",
+            "replace",
+            "apply_patch",
+            "command",
+            "finish",
+          ],
+        },
+        args: {
+          anyOf: [
+            {
+              type: "object",
+              properties: { path: { type: ["string", "null"] } },
+              required: ["path"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                query: { type: "string" },
+                path: { type: ["string", "null"] },
+                maxResults: { type: ["integer", "null"] },
+              },
+              required: ["query", "path", "maxResults"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                path: { type: "string" },
+                startLine: { type: ["integer", "null"] },
+                endLine: { type: ["integer", "null"] },
+              },
+              required: ["path", "startLine", "endLine"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                path: { type: "string" },
+                search: { type: "string" },
+                replacement: { type: "string" },
+                expectedOccurrences: { type: ["integer", "null"] },
+              },
+              required: ["path", "search", "replacement", "expectedOccurrences"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: { patch: { type: "string" } },
+              required: ["patch"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: {
+                command: { type: "string" },
+                timeoutMs: { type: ["integer", "null"] },
+              },
+              required: ["command", "timeoutMs"],
+              additionalProperties: false,
+            },
+            {
+              type: "object",
+              properties: { summary: { type: "string" } },
+              required: ["summary"],
+              additionalProperties: false,
+            },
+          ],
+        },
+      },
+      required: ["action", "args"],
+      additionalProperties: false,
+    },
+  },
+};
 
 /**
  * A provider-backed coding loop. The model chooses one explicit repository action per turn;
@@ -429,44 +518,45 @@ function parseReasoningAction(content: string): ReasoningAction {
   if (!isRecord(parsed) || typeof parsed.action !== "string") {
     throw new Error("reasoning action must contain an action field");
   }
+  const args = isRecord(parsed.args) ? parsed.args : parsed;
   if (parsed.action === "finish") {
-    return { type: "finish", summary: stringField(parsed, "summary") ?? "Task finished" };
+    return { type: "finish", summary: stringField(args, "summary") ?? "Task finished" };
   }
   if (parsed.action === "list_files")
-    return { type: "list_files", path: optionalString(parsed.path) };
+    return { type: "list_files", path: optionalString(args.path) };
   if (parsed.action === "search") {
     return {
       type: "search",
-      query: requiredString(parsed, "query"),
-      path: optionalString(parsed.path),
-      maxResults: positiveInteger(parsed.maxResults, "maxResults"),
+      query: requiredString(args, "query"),
+      path: optionalString(args.path),
+      maxResults: positiveInteger(args.maxResults, "maxResults"),
     };
   }
   if (parsed.action === "read_file") {
     return {
       type: "read_file",
-      path: requiredString(parsed, "path"),
-      startLine: positiveInteger(parsed.startLine, "startLine"),
-      endLine: positiveInteger(parsed.endLine, "endLine"),
+      path: requiredString(args, "path"),
+      startLine: positiveInteger(args.startLine, "startLine"),
+      endLine: positiveInteger(args.endLine, "endLine"),
     };
   }
   if (parsed.action === "replace") {
     return {
       type: "replace",
-      path: requiredString(parsed, "path"),
-      search: requiredString(parsed, "search"),
-      replacement: stringField(parsed, "replacement") ?? "",
-      expectedOccurrences: positiveInteger(parsed.expectedOccurrences, "expectedOccurrences"),
+      path: requiredString(args, "path"),
+      search: requiredString(args, "search"),
+      replacement: stringField(args, "replacement") ?? "",
+      expectedOccurrences: positiveInteger(args.expectedOccurrences, "expectedOccurrences"),
     };
   }
   if (parsed.action === "apply_patch") {
-    return { type: "apply_patch", patch: requiredString(parsed, "patch") };
+    return { type: "apply_patch", patch: requiredString(args, "patch") };
   }
   if (parsed.action === "command") {
     return {
       type: "command",
-      command: requiredString(parsed, "command"),
-      timeoutMs: positiveInteger(parsed.timeoutMs, "timeoutMs"),
+      command: requiredString(args, "command"),
+      timeoutMs: positiveInteger(args.timeoutMs, "timeoutMs"),
     };
   }
   throw new Error(`unsupported reasoning action: ${parsed.action}`);
@@ -488,7 +578,7 @@ function stringField(record: Record<string, unknown>, key: string): string | und
 }
 
 function positiveInteger(value: unknown, key: string): number | undefined {
-  if (value === undefined) return undefined;
+  if (value === undefined || value === null) return undefined;
   if (!Number.isSafeInteger(value) || (value as number) < 1)
     throw new Error(`${key} must be a positive integer`);
   return value as number;
