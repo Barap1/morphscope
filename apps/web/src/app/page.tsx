@@ -45,12 +45,21 @@ export default function OverviewPage() {
             <Link className="ui-button ui-button-primary ui-button-lg" href="/experiments">
               Open experiments <PlayCircle size={16} weight="bold" aria-hidden />
             </Link>
-            <Link
-              className="ui-button ui-button-secondary ui-button-lg"
-              href="/settings#workspace-guide"
-            >
-              Prepare workspace <ArrowUpRight size={16} weight="bold" aria-hidden />
-            </Link>
+            {latest ? (
+              <Link
+                className="ui-button ui-button-secondary ui-button-lg"
+                href={`/runs/${encodeURIComponent(latest.run.id)}`}
+              >
+                Replay latest trace <ArrowUpRight size={16} weight="bold" aria-hidden />
+              </Link>
+            ) : (
+              <Link
+                className="ui-button ui-button-secondary ui-button-lg"
+                href="/settings#workspace-guide"
+              >
+                Prepare workspace <ArrowUpRight size={16} weight="bold" aria-hidden />
+              </Link>
+            )}
           </div>
           <div className="hero-annotations">
             <span className="hero-annotations-rule" aria-hidden />
@@ -118,7 +127,7 @@ export default function OverviewPage() {
             <Metric
               label="Experiments"
               value={String(experiments.length)}
-              detail="local manifests"
+              detail={published ? "recorded studies" : "local manifests"}
               tone="accent"
             />
             <Metric

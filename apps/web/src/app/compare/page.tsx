@@ -166,6 +166,8 @@ function ComparisonSurface({ left, right }: { left: StoredRun; right: StoredRun 
         <RunHead storedRun={right} side="right" />
       </div>
 
+      <MetricDeltaPanel left={left} right={right} />
+
       <Panel className="compare-first-panel" tone={firstDivergence >= 0 ? "accent" : "steel"}>
         <div className="compare-first-copy">
           <span className="section-label">First meaningful divergence</span>
@@ -186,8 +188,6 @@ function ComparisonSurface({ left, right }: { left: StoredRun; right: StoredRun 
           <span />
         </div>
       </Panel>
-
-      <MetricDeltaPanel left={left} right={right} />
 
       <Panel className="data-panel compare-timeline-panel">
         <div className="section-heading">

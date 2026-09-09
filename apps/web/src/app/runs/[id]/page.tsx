@@ -17,7 +17,6 @@ import {
   Panel,
   StatusBadge,
   TableShell,
-  type StatusName,
 } from "@morphscope/ui";
 import { CopyButton } from "../../../components/copy-button";
 import { loadExperiments, loadRun, type StoredRun, type TraceSpanRecord } from "../../../lib/data";
@@ -59,11 +58,15 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
     <div className="data-page run-page">
       <div className="detail-heading">
         <div className="detail-heading-copy">
-          <span className="detail-label">Run replay / {run.configurationId}</span>
-          <h1>{run.id}</h1>
+          <span className="detail-label">Run replay</span>
+          <h1>{run.configurationId}</h1>
           <p>
             {run.taskId} · {run.provider} / {run.model}
           </p>
+          <div className="run-id-line">
+            <span>Run ID</span>
+            <code>{run.id}</code>
+          </div>
         </div>
         <div className="detail-heading-actions">
           <CopyButton value={run.id} label="Copy run ID" />
@@ -80,10 +83,6 @@ function RunRecordView({ storedRun }: { storedRun: StoredRun }) {
           <Link className="ui-button ui-button-quiet" href={experimentHref}>
             <ArrowLeft size={15} weight="bold" aria-hidden /> Experiment
           </Link>
-          <StatusBadge
-            status={statusFor(run.terminalState)}
-            label={run.terminalState.replaceAll("_", " ")}
-          />
         </div>
       </div>
 
@@ -503,12 +502,6 @@ function attributeSummary(attributes: Record<string, unknown> | undefined): stri
       .map(([key, value]) => `${key}: ${String(value)}`)
       .join(" · ") || "No span attributes recorded."
   );
-}
-
-function statusFor(state: string): StatusName {
-  if (state === "resolved") return "success";
-  if (state === "provider_error" || state === "environment_error") return "warning";
-  return "failed";
 }
 
 function formatTime(value: string): string {
