@@ -115,11 +115,12 @@ only live multi-turn result.
   five task definitions used by the dashboard, including all four task IDs with published
   runs. Hosted task pages therefore do not depend on benchmark files being present in the
   Vercel deployment.
-- The final Vercel deployment is `dpl_b9hxrwQzH1MVDN2ovBfzrgL1CrY6`, status `READY`, in project
-  `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`. It was
-  deployed from release-candidate commit `ea2c5d1`. The hosted
-  data path is read-only and uses the committed sanitized snapshot; no provider credentials are
-  required by the web runtime.
+- The earlier release-candidate deployment was `dpl_b9hxrwQzH1MVDN2ovBfzrgL1CrY6`. The current
+  exact-head production deployment is `dpl_42waCAy1Dk12xoBYcGn441EjPvjz`, status `READY`, in
+  project `barap1s-projects/morphscope`, with production alias
+  `https://morphscope.vercel.app`. Vercel records source commit
+  `b2eb6c9848e79ca67ae227ec15f0e075c32a8abb`. The hosted data path is read-only and uses the
+  committed sanitized snapshot; no provider credentials are required by the web runtime.
 - Final browser route smoke checks covered the homepage, experiments, one experiment detail, one
   task, one run detail, comparison, failure explorer, settings, and the shareable run route. All
   9 routes rendered without a not-found heading; the shareable route resolved to the canonical run
@@ -165,3 +166,9 @@ only live multi-turn result.
   persisted trace timeline, stabilizes production OpenGraph metadata on the canonical domain, and
   normalizes provider-returned repository context paths before they enter the result contract.
   Regression coverage remains provider-free; the full suite passes 62 tests.
+- Post-deployment HTTP smoke on the canonical production alias returned 200 for all nine known
+  routes, 404 for unknown experiment, task, and run routes, and a 307 share redirect that resolves
+  to 404 for an unknown run. The final GitHub Actions check for the exact SHA completed successfully.
+- A refreshed browser connection could not be established because the local Browser plugin client
+  referenced a missing older service module; Chrome diagnostics had already passed and no application
+  code or production configuration was changed to work around that tooling failure.
