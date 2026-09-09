@@ -115,29 +115,36 @@ only live multi-turn result.
   five task definitions used by the dashboard, including all four task IDs with published
   runs. Hosted task pages therefore do not depend on benchmark files being present in the
   Vercel deployment.
-- The final Vercel deployment is `dpl_GJ6am7qMTaWidwMfuJpGbZojFuwW`, status `READY`, in project
-  `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`. The
-  hosted data path is read-only and uses the committed sanitized snapshot; no provider
-  credentials are required by the web runtime.
-- Final targeted HTTPS smoke checks returned HTTP `200` for the homepage, experiments, one
-  experiment detail, one run detail, comparison, failure explorer, settings, and all five
-  published task-contract routes. A published trace route rendered its `Trace replay` surface;
-  comparison rendered the baseline/Morph timeline; and a narrow mobile user-agent request
-  returned HTTP `200` for the homepage.
+- The final Vercel deployment is `dpl_Eodd7aAbnv61AfXhuvgRqWKTTgpP`, status `READY`, in project
+  `barap1s-projects/morphscope`, with production alias `https://morphscope.vercel.app`. It was
+  deployed from release-candidate commit `74f88dc6936b877bec6492a3537a6fe40fab3b35`. The hosted
+  data path is read-only and uses the committed sanitized snapshot; no provider credentials are
+  required by the web runtime.
+- Final browser route smoke checks covered the homepage, experiments, one experiment detail, one
+  task, one run detail, comparison, failure explorer, settings, and the shareable run route. All
+  9 routes rendered without a not-found heading; the shareable route resolved to the canonical run
+  surface. Representative routes emitted no console errors or warnings.
+- The final responsive pass checked all 9 routes at `1440x900`, `1280x800`, `1024x768`, `768x1024`,
+  and `390x844`: 45 route/viewport combinations, all with bounded document/body width and a
+  rendered heading. The experiment-detail overflow found at `1024x768` was fixed by allowing
+  long task-contract values to wrap and was rechecked cleanly.
 - Production safety checks found no provider environment variables in the Vercel production
   environment, no public `/api/run`, `/api/execute`, or `/api/provider` route, and no absolute
   private filesystem paths, bearer tokens, or provider credentials in representative responses.
 - The existing CLI trace export was run once against the Docker fixture and wrote a non-empty
   `7,448`-byte JSON export to a temporary path, which was removed immediately afterward.
-- Browser review on the final deployment used temporary Chrome `152.0.7977.82` through
-  `agent-browser`: desktop overview, trace replay, and comparison screenshots were visually
-  inspected; a `390x844` mobile screenshot was inspected; and the `dark` plus `reduced-motion`
-  media settings were exercised. A bounded tab traversal reached the skip link, mobile navigation,
-  command menu, theme control, primary links, latest-trace link, and the focusable evidence block;
-  the mobile navigation toggle opened with `aria-expanded="true"`.
-- Axe `4.12.1` reported zero violations on the final comparison page (`46` passes, `0`
-  incomplete) and zero violations on the final homepage (`38` passes, `1` incomplete). The one
-  homepage incomplete item is the contrast rule’s inability to determine the background behind
-  text over the hero image; it is not reported as a violation. Final homepage and comparison
-  checks emitted no console or page-error output. Focus-visible and reduced-motion rules are also
-  present in the CSS.
+- Browser review on the final deployment used temporary Chrome through `agent-browser`: desktop
+  overview, trace replay, comparison, and failure-explorer screenshots were visually inspected;
+  a `390x844` mobile screenshot was inspected; and the `dark` plus `reduced-motion` media settings
+  were exercised. A bounded tab traversal reached the skip link, mobile navigation, command menu,
+  theme control, primary links, latest-trace link, and the focusable evidence block. Final
+  interactions verified mobile navigation open/close (`aria-expanded` true then false), failure
+  filtering, run-ID clipboard copy, and share-route resolution.
+- The existing Axe `4.12.1` baseline reported zero violations on the immediately preceding
+  comparison page (`46` passes, `0` incomplete) and homepage (`38` passes, `1` incomplete). The
+  homepage incomplete item is the contrast rule’s inability to determine the background behind text
+  over the hero image; it is not reported as a violation. A new Axe runner is not wired into this
+  repository, so this pass performed a browser structural accessibility recheck instead: all final
+  key pages had named buttons, a skip link, a coherent heading sequence, and no missing image alt
+  text other than the intentional decorative hero asset. Focus-visible and reduced-motion rules
+  remain present in the CSS.
