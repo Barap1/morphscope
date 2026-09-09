@@ -22,7 +22,10 @@ describe("search providers", () => {
 
   it("adapts WarpGrep contexts without changing the measurement contract", async () => {
     const execute = vi.fn().mockResolvedValue({
-      contexts: [{ file: "src/a.ts", content: "needle" }],
+      contexts: [
+        { file: "src/a.ts", content: "needle" },
+        { file: "../../outside.txt", content: "untrusted" },
+      ],
       toolCalls: 2,
       metadata: {
         provider: "morph",
@@ -38,6 +41,7 @@ describe("search providers", () => {
     });
     expect(execute).toHaveBeenCalledWith({ searchTerm: "needle", repoRoot: "/tmp/repo" });
     expect(result.rendered).toContain("src/a.ts");
+    expect(result.rendered).not.toContain("outside.txt");
     expect(result.metadata?.status).toBe(200);
     expect(result.measurement.totalSearchLatencyMs).toBe(12);
     expect(result.measurement.fileRecallProxy).toBe(1);

@@ -172,6 +172,31 @@ describe("MorphClient", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  it("drops provider contexts that escape the repository root", async () => {
+    const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-path-test-"));
+    temporaryDirectories.push(directory);
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
+      response({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                contexts: [{ file: "../../outside.txt", content: "untrusted" }],
+              }),
+            },
+          },
+        ],
+      }),
+    );
+
+    const result = await new MorphClient({ apiKey: "test-key", fetchImpl }).warpGrep({
+      repoRoot: directory,
+      searchTerm: "Find needle",
+    });
+
+    expect(result.contexts).toEqual([]);
+  });
+
   it("resolves documented WarpGrep finish file locations into real contexts", async () => {
     const directory = mkdtempSync(join(tmpdir(), "morphscope-provider-finish-test-"));
     temporaryDirectories.push(directory);

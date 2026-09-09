@@ -147,6 +147,13 @@ export type StoredRun = {
   sourceFile: string;
 };
 
+export type PublishedProvenance = {
+  generatedAt: string;
+  sourceCommit: string;
+  runCount: number | null;
+  experimentCount: number | null;
+};
+
 export type TaskSummary = {
   id: string;
   repository: string;
@@ -207,6 +214,21 @@ export function isPublishedDashboard(): boolean {
     process.env.MORPHSCOPE_HOSTED_READ_ONLY === "true" ||
     process.env.VERCEL === "1"
   );
+}
+
+export function loadPublishedProvenance(): PublishedProvenance | null {
+  if (!isRecord(publishedData) || !isRecord(publishedData.provenance)) return null;
+  const provenance = publishedData.provenance;
+  const generatedAt = stringValue(provenance.generatedAt);
+  const sourceCommit = stringValue(provenance.sourceCommit);
+  if (!generatedAt || !sourceCommit) return null;
+  return {
+    generatedAt,
+    sourceCommit,
+    runCount: typeof provenance.runCount === "number" ? provenance.runCount : null,
+    experimentCount:
+      typeof provenance.experimentCount === "number" ? provenance.experimentCount : null,
+  };
 }
 
 export function loadRun(id: string): StoredRun | null {

@@ -8,7 +8,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { Badge, Metric, Panel, StatusBadge, type StatusName } from "@morphscope/ui";
-import { isPublishedDashboard, loadDashboardData } from "../lib/data";
+import { isPublishedDashboard, loadDashboardData, loadPublishedProvenance } from "../lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,7 @@ export default function OverviewPage() {
   const { experiments, runs, summary } = loadDashboardData();
   const latest = runs[0];
   const published = isPublishedDashboard();
+  const provenance = published ? loadPublishedProvenance() : null;
   return (
     <div className="overview-page">
       <section className="hero-panel" aria-labelledby="overview-title">
@@ -149,6 +150,13 @@ export default function OverviewPage() {
               tone="warning"
             />
           </div>
+          {provenance ? (
+            <p className="panel-footnote overview-provenance">
+              Published snapshot · generated {formatSnapshotDate(provenance.generatedAt)} ·{" "}
+              {provenance.runCount ?? "recorded"} allowlisted runs · descriptive evidence, not a
+              benchmark claim.
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -246,6 +254,14 @@ function statusFor(state: string): StatusName {
   if (state === "resolved") return "success";
   if (state === "provider_error" || state === "environment_error") return "warning";
   return "failed";
+}
+
+function formatSnapshotDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function formatDuration(value: number): string {

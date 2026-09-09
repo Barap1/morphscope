@@ -13,9 +13,10 @@ that score: repository search, context, reasoning turns, edits, routing decision
 and cost. That makes configuration comparisons and failure analysis inspectable instead of
 anecdotal.
 
-The hosted dashboard is a read-only view over an explicitly published, sanitized snapshot. The
-full runner, Docker sandbox, and provider-backed workflows remain available as local developer
-tooling.
+The hosted dashboard is a read-only view over an explicitly published, sanitized snapshot. Its
+counts are descriptive evidence from the checked-in fixture set, not a claim of benchmark
+generality. The full runner, Docker sandbox, and provider-backed workflows remain available as
+local developer tooling.
 
 ## What you can see
 
@@ -43,7 +44,9 @@ the replay and comparison surfaces.
 ## Live demo
 
 [Open MorphScope](https://morphscope.vercel.app) to inspect the current hosted evidence. Hosted mode
-does not execute repositories, call providers, access local SQLite, or mutate dashboard data.
+does not execute repositories, call providers, access local SQLite, or mutate dashboard data. The
+snapshot is generated from an allowlisted set of persisted traces and should be read as a
+technical walkthrough of the instrumentation, not as a statistically general benchmark result.
 
 ## Quickstart
 

@@ -283,7 +283,7 @@ function RunRow({ storedRun }: { storedRun: StoredRun }) {
 }
 
 function ParetoPanel({ runs }: { runs: StoredRun[] }) {
-  const plotted = runs.slice(0, 24);
+  const plotted = runs.filter((storedRun) => storedRun.run.score !== null).slice(0, 24);
   const maxLatency = Math.max(...plotted.map((storedRun) => storedRun.run.totalLatency), 1);
   return (
     <Panel className="data-panel pareto-panel">
@@ -292,7 +292,7 @@ function ParetoPanel({ runs }: { runs: StoredRun[] }) {
           <span className="section-label">Runtime / correctness</span>
           <h2>Recorded run field</h2>
         </div>
-        <Badge variant="accent">LIVE DATA</Badge>
+        <Badge variant="accent">RECORDED DATA</Badge>
       </div>
       <svg
         className="pareto-chart"
@@ -332,7 +332,8 @@ function ParetoPanel({ runs }: { runs: StoredRun[] }) {
         })}
       </svg>
       <p className="panel-footnote">
-        Each dot is a persisted run. Environment failures remain visible but unscored.
+        Each dot is a persisted scored run. Unscored environment failures remain visible in the
+        table above but are excluded from this correctness plot.
       </p>
     </Panel>
   );

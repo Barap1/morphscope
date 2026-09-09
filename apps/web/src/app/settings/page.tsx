@@ -11,7 +11,7 @@ import { Badge, Panel, StatusBadge } from "@morphscope/ui";
 import { DevelopmentNotice } from "../../components/empty-page";
 import { PageHeader } from "../../components/page-header";
 import { ThemeToggle } from "../../components/theme-toggle";
-import { isPublishedDashboard } from "../../lib/data";
+import { isPublishedDashboard, loadPublishedProvenance } from "../../lib/data";
 
 export const metadata = {
   title: "Settings",
@@ -20,6 +20,7 @@ export const metadata = {
 
 export default function SettingsPage() {
   const published = isPublishedDashboard();
+  const provenance = published ? loadPublishedProvenance() : null;
   return (
     <div className="empty-page">
       <PageHeader
@@ -91,6 +92,13 @@ export default function SettingsPage() {
                 ? "This hosted surface displays sanitized, read-only evidence published with the build."
                 : "The shell reads local persisted traces and never creates provider or runner connections from the web UI."}
             </p>
+            {provenance ? (
+              <p className="panel-footnote">
+                Generated {formatSnapshotDate(provenance.generatedAt)} from{" "}
+                {provenance.runCount ?? "recorded"} allowlisted runs at source commit{" "}
+                <code>{provenance.sourceCommit.slice(0, 8)}</code>.
+              </p>
+            ) : null}
             <div className="settings-guide">
               <div className="settings-guide-item">
                 <ShieldCheck size={16} weight="bold" aria-hidden />
@@ -140,4 +148,12 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+function formatSnapshotDate(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(value));
 }

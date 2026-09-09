@@ -210,7 +210,7 @@ export class MorphClient {
         messages.push({ role: "assistant", content, tool_calls: calls });
         if (calls.length === 0) {
           const parsed = parseStructuredContent(content);
-          const resolvedContexts = contextsFrom(parsed);
+          const resolvedContexts = contextsFrom(parsed, repoRoot);
           if (resolvedContexts.length === 0) {
             if (parsed) resolvedContexts.push(...contextsFromFinish(repoRoot, parsed));
           }
@@ -244,7 +244,7 @@ export class MorphClient {
           toolCalls += 1;
           if (name === "finish") {
             const parsed = parseStructuredContent(args.answer ?? args.result ?? args ?? content);
-            const resolvedContexts = contextsFrom(parsed);
+            const resolvedContexts = contextsFrom(parsed, repoRoot);
             if (resolvedContexts.length === 0) {
               resolvedContexts.push(...contextsFromFinish(repoRoot, args));
             }
@@ -541,12 +541,12 @@ function parseStructuredContent(content: unknown): JsonRecord | undefined {
   }
 }
 
-function contextsFrom(value: JsonRecord | undefined): WarpGrepContext[] {
+function contextsFrom(value: JsonRecord | undefined, root: string): WarpGrepContext[] {
   if (!value || !Array.isArray(value.contexts)) return [];
   return value.contexts.flatMap((context) => {
     if (typeof context !== "object" || context === null || Array.isArray(context)) return [];
     const record = context as JsonRecord;
-    const file = stringValue(record.file);
+    const file = normalizeRepositoryPath(root, stringValue(record.file));
     const content = stringValue(record.content);
     return file && content ? [{ file, content }] : [];
   });
@@ -791,4 +791,20 @@ function safeRepoPath(root: string, input: string | undefined): string {
     throw new Error("repository symlink escapes repoRoot");
   }
   return realPath;
+}
+
+function normalizeRepositoryPath(root: string, input: string | undefined): string | null {
+  if (!input || input.includes("\0")) return null;
+  const candidate = resolve(root, input);
+  const relativePath = relative(root, candidate);
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`)) return null;
+
+  try {
+    const realPath = realpathSync.native(candidate);
+    const realRelativePath = relative(root, realPath);
+    if (realRelativePath === ".." || realRelativePath.startsWith(`..${sep}`)) return null;
+    return realRelativePath || ".";
+  } catch {
+    return relativePath || ".";
+  }
 }

@@ -9,6 +9,44 @@ const allowlistPath = resolve(process.argv[3] ?? "scripts/published-run-allowlis
 
 type JsonRecord = Record<string, unknown>;
 
+const comparisonKeys = new Set([
+  "policyVersion",
+  "decisionCount",
+  "selectedRoutes",
+  "fixedVariables",
+  "variedVariables",
+  "metrics",
+  "configurations",
+  "configuration",
+  "downstreamSuccess",
+  "beforeBytes",
+  "afterBytes",
+  "retainedRatio",
+  "toolOutputShare",
+  "estimatedFutureModelCallsSaved",
+  "estimatedFutureInputBytesSaved",
+  "informationLoss",
+  "compactionLatencyMs",
+  "compactionCostUsd",
+  "id",
+  "terminalState",
+  "syntaxStatus",
+  "retryCount",
+  "applyLatencyMs",
+  "originalSha256",
+  "finalSha256",
+  "changedFiles",
+  "numberSearches",
+  "rawSearch",
+  "warpGrep",
+  "deltaWarpMinusRaw",
+  "totalSearchLatencyMs",
+  "bytesContextReturned",
+  "fileRecallProxy",
+  "timeToFirstReferenceRelevantFileMs",
+  "uniqueFilesFound",
+]);
+
 if (!existsSync(morphScopeRoot)) {
   throw new Error(".morphscope is required; run at least one real local task before publishing");
 }
@@ -90,6 +128,7 @@ const experiments = findFiles(join(morphScopeRoot, "experiments"), "experiment.j
         ? { fixedVariables: projectFixedVariables(value.fixedVariables) }
         : {}),
       variedVariable: value.variedVariable,
+      ...(isRecord(value.comparison) ? { comparison: projectComparison(value.comparison) } : {}),
       configurations: allowlistedConfigurations(value.configurations).map((configuration) => {
         const search = projectSearch(configuration.search);
         return {
@@ -529,6 +568,36 @@ function projectFixedVariables(value: JsonRecord): JsonRecord {
         }
       : {}),
   };
+}
+
+function isComparisonKey(key: string): boolean {
+  return comparisonKeys.has(key);
+}
+
+function projectComparison(value: JsonRecord): JsonRecord {
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, entry]) => {
+      if (!isComparisonKey(key)) return [];
+      const projected = projectComparisonValue(key, entry);
+      return projected === undefined ? [] : [[key, projected]];
+    }),
+  );
+}
+
+function projectComparisonValue(key: string, value: unknown): unknown {
+  if (isSafeScalar(value)) return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => projectComparisonValue(key, entry))
+      .filter((entry) => entry !== undefined);
+  }
+  if (isRecord(value)) {
+    if (key === "selectedRoutes") {
+      return Object.fromEntries(Object.entries(value).filter(([, entry]) => isSafeScalar(entry)));
+    }
+    return projectComparison(value);
+  }
+  return undefined;
 }
 
 function allowlistedConfigurations(value: unknown): JsonRecord[] {

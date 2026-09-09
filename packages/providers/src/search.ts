@@ -1,3 +1,5 @@
+import { realpathSync } from "node:fs";
+import { relative, resolve, sep } from "node:path";
 import type { ProviderCallMetadata } from "./provider-types.js";
 
 export type SearchMatch = {
@@ -98,9 +100,13 @@ export class WarpGrepProvider implements SearchProvider {
       repoRoot: this.repoRoot,
     });
     const latencyMs = result.metadata.latencyMs ?? performance.now() - startedAt;
+    const validatedContexts = result.contexts.flatMap((context) => {
+      const file = normalizeRepositoryPath(this.repoRoot, context.file);
+      return file ? [{ ...context, file }] : [];
+    });
     const contexts = input.maxResults
-      ? result.contexts.slice(0, input.maxResults)
-      : [...result.contexts];
+      ? validatedContexts.slice(0, input.maxResults)
+      : validatedContexts;
     const rendered = contexts.map((context) => `${context.file}\n${context.content}`).join("\n");
     return makeResult({
       provider: this.id,
@@ -116,6 +122,22 @@ export class WarpGrepProvider implements SearchProvider {
       referenceRelevantFiles: input.referenceRelevantFiles,
       metadata: result.metadata,
     });
+  }
+}
+
+function normalizeRepositoryPath(root: string, input: string | undefined): string | null {
+  if (!input || input.includes("\0")) return null;
+  const candidate = resolve(root, input);
+  const relativePath = relative(root, candidate);
+  if (relativePath === ".." || relativePath.startsWith(`..${sep}`)) return null;
+
+  try {
+    const realPath = realpathSync.native(candidate);
+    const realRelativePath = relative(root, realPath);
+    if (realRelativePath === ".." || realRelativePath.startsWith(`..${sep}`)) return null;
+    return realRelativePath || ".";
+  } catch {
+    return relativePath || ".";
   }
 }
 

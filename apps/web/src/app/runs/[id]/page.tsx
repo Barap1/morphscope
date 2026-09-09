@@ -429,7 +429,7 @@ function Timeline({ spans }: { spans: TraceSpanRecord[] }) {
     );
   return (
     <ol className="trace-timeline">
-      {spans.slice(0, 48).map((span) => (
+      {spans.map((span) => (
         <li className="trace-timeline-item" key={span.spanId}>
           <span className={`trace-node trace-node-${span.status}`} aria-hidden />
           <div className="trace-timeline-copy">

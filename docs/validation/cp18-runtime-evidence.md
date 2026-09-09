@@ -147,4 +147,21 @@ only live multi-turn result.
   repository, so this pass performed a browser structural accessibility recheck instead: all final
   key pages had named buttons, a skip link, a coherent heading sequence, and no missing image alt
   text other than the intentional decorative hero asset. Focus-visible and reduced-motion rules
-  remain present in the CSS.
+ remain present in the CSS.
+
+## Fresh release-candidate review
+
+- A fresh read-only Orca review ran against the current checkout and production evidence:
+  run run_d682f44428f4, task task_9256dbde8fb0, completed with no file changes.
+- The reviewer reproduced a Next.js streamed soft-404: unknown dynamic detail routes rendered the
+  correct not-found surface with HTTP 200. Removing the global loading boundary restored real
+  404 responses in the rebuilt local production server; the share route now redirects and then
+  returns 404 for an unknown run.
+- The hosted publisher now carries a strict projection of persisted experiment comparison
+  measurements. The regenerated snapshot contains 32 runs, 12 published experiments, and
+  8 projected comparison manifests; a recursive response scan found no absolute private paths,
+  bearer tokens, or credential-shaped values.
+- The release hardening also excludes unscored runs from the correctness plot, renders the complete
+  persisted trace timeline, stabilizes production OpenGraph metadata on the canonical domain, and
+  normalizes provider-returned repository context paths before they enter the result contract.
+  Regression coverage remains provider-free; the full suite passes 62 tests.
