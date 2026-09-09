@@ -147,7 +147,7 @@ only live multi-turn result.
   repository, so this pass performed a browser structural accessibility recheck instead: all final
   key pages had named buttons, a skip link, a coherent heading sequence, and no missing image alt
   text other than the intentional decorative hero asset. Focus-visible and reduced-motion rules
- remain present in the CSS.
+  remain present in the CSS.
 
 ## Fresh release-candidate review
 

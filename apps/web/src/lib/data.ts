@@ -219,7 +219,7 @@ export function isPublishedDashboard(): boolean {
 export function loadPublishedProvenance(): PublishedProvenance | null {
   if (!isRecord(publishedData) || !isRecord(publishedData.provenance)) return null;
   const provenance = publishedData.provenance;
-  const generatedAt = stringValue(provenance.generatedAt);
+  const generatedAt = stringValue(publishedData.generatedAt);
   const sourceCommit = stringValue(provenance.sourceCommit);
   if (!generatedAt || !sourceCommit) return null;
   return {
