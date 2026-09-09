@@ -1,15 +1,53 @@
 # MorphScope
 
-MorphScope is an open-source coding-agent evaluation, profiling, trace-replay, and
-adaptive-routing platform. The public dashboard is a read-only view over explicitly published,
-sanitized traces; the full runner and provider-backed workflows remain local developer tooling.
+Trace-first evaluation and observability for coding agents: see the work between the prompt and
+the patch.
 
-## Prerequisites
+[Live dashboard](https://morphscope.vercel.app) · [Quickstart](#quickstart) ·
+[Architecture](#architecture)
 
-- Node.js `>=24 <25`
-- pnpm `11.25.0`
+## Why MorphScope
 
-## Bootstrap
+Most agent evaluations reduce a run to a final score. MorphScope keeps the evidence that explains
+that score: repository search, context, reasoning turns, edits, routing decisions, tests, latency,
+and cost. That makes configuration comparisons and failure analysis inspectable instead of
+anecdotal.
+
+The hosted dashboard is a read-only view over an explicitly published, sanitized snapshot. The
+full runner, Docker sandbox, and provider-backed workflows remain available as local developer
+tooling.
+
+## What you can see
+
+- Replay a trace from task request through edit and verification.
+- Compare two configurations with aligned timelines, measured deltas, and the first divergence.
+- Explore failure categories and open representative runs.
+- Run deterministic fixtures locally, with Docker-backed execution and optional provider adapters.
+
+## Architecture
+
+```text
+task + pinned repository
+          ↓
+  sandboxed agent run
+          ↓
+ trace writer + evaluation
+          ↓
+ persisted evidence → projected hosted snapshot
+```
+
+The system keeps repository operations under MorphScope control, records incremental redacted
+traces, evaluates patches against task contracts, and exposes technical depth progressively through
+the replay and comparison surfaces.
+
+## Live demo
+
+[Open MorphScope](https://morphscope.vercel.app) to inspect the current hosted evidence. Hosted mode
+does not execute repositories, call providers, access local SQLite, or mutate dashboard data.
+
+## Quickstart
+
+Prerequisites: Node.js `>=24 <25` and pnpm `11.25.0`.
 
 From the repository root:
 
@@ -22,29 +60,14 @@ pnpm test
 pnpm format:check
 ```
 
-`pnpm install` uses the versions declared in the root manifest. Provider credentials are
-optional during bootstrap; see `.env.example` before running provider-backed experiments.
+Provider credentials are optional during bootstrap; see `.env.example` before running
+provider-backed experiments.
 
-## Live dashboard and deployment
-
-[Open the MorphScope dashboard](https://morphscope.vercel.app). The hosted Vercel application is
-read-only: it serves the committed `apps/web/src/lib/published-data.json` snapshot and has no
-route for arbitrary repository execution, shell commands, provider calls, local SQLite access, or
-dashboard mutations.
-
-Generate a safe snapshot locally from persisted traces with:
-
-```bash
-pnpm publish:dashboard
-```
-
-Publication is constrained by `scripts/published-run-allowlist.json`, projects only dashboard
-fields, redacts credential-shaped values, and writes no raw provider response bodies. The local
-runner remains available for full verification:
+To run the deterministic local path and open the web shell:
 
 ```bash
 pnpm morphscope run benchmarks/tasks/example.yaml --config baseline
-pnpm morphscope run benchmarks/tasks/morphscope-docs-search.yaml --config baseline
+pnpm dev:web
 ```
 
 The real-repository task uses Docker by default; build `Dockerfile.sandbox` first. Use
@@ -53,26 +76,15 @@ optional and requires local-only variables named `GROQ_API_KEY` for Groq reasoni
 `MORPH_API_KEY` for the Morph technical spike. Never use either variable as a `NEXT_PUBLIC_*`
 value or add provider credentials to the Vercel project.
 
-From an authenticated checkout, deploy the dashboard with:
+## Local workflows
 
-```bash
-vercel link --yes --project morphscope
-vercel deploy --prod --yes
-```
-
-The Vercel project uses `apps/web` as its Root Directory and `apps/web/vercel.json` for the
-workspace install and Next.js build commands.
-
-## Current scope: CHECKPOINT 18
-
-The current vertical slice adds shared schemas, incremental redacted traces, durable
-SQLite persistence, content-addressed patch artifacts, an isolated local sandbox, a
-deterministic offline baseline runner, and credential-gated provider adapters. Morph
+MorphScope combines shared schemas, incremental redacted traces, durable SQLite persistence,
+content-addressed patch artifacts, an isolated local sandbox, a deterministic offline baseline
+runner, and credential-gated provider adapters. Morph
 WarpGrep, Fast Apply, and Compact use the documented OpenAI-compatible HTTP contracts.
 Groq is the reasoning provider with `openai/gpt-oss-120b` as the explicit default.
-Provider metadata records model identity, status, latency, usage when supplied, and
-classified provider failures. Live provider artifacts stay under the ignored
-`.morphscope/` directory.
+Provider metadata records model identity, status, latency, usage when supplied, and classified
+provider failures. Live provider artifacts stay under the ignored `.morphscope/` directory.
 
 To work on the web shell:
 
@@ -81,14 +93,10 @@ pnpm dev:web
 pnpm build:web
 ```
 
-The web dashboard now reads persisted `.morphscope` run, experiment, trace, evaluation,
-and patch artifacts directly. It is dynamically rendered, so a newly completed local
+The web dashboard reads persisted `.morphscope` run, experiment, trace, evaluation, and patch
+artifacts directly. It is dynamically rendered, so a newly completed local
 CLI run appears on the overview, experiment, task, failure, and run-replay views without
 hand-authored dashboard fixtures:
-
-```bash
-pnpm dev:web
-```
 
 Use the overview for the current evidence field, `/experiments` for configuration
 matrices and recorded outcomes, `/tasks/<task-id>` for task-scoped runs, and
@@ -103,6 +111,16 @@ only run IDs listed in `scripts/published-run-allowlist.json` are selected, know
 are projected, and paths/credential-shaped values are sanitized. New local traces are not published
 implicitly.
 
+From an authenticated checkout, deploy the existing dashboard project with:
+
+```bash
+vercel link --yes --project morphscope
+vercel deploy --prod --yes
+```
+
+The Vercel project uses `apps/web` as its Root Directory and `apps/web/vercel.json` for the
+workspace install and Next.js build commands.
+
 The deterministic baseline remains offline by default. An experimental Groq-backed reasoning loop
 can be exercised when a local free-tier credential is present:
 
@@ -112,11 +130,14 @@ pnpm morphscope run benchmarks/tasks/example.yaml --config groq
 
 The Groq path uses `openai/gpt-oss-120b`, gives the model one constrained repository action per
 turn, and records provider/model identity, latency, usage, and classified provider failures. The
-release validation proved authentication and the adapter smoke path, but the multi-turn fixture
-failed on a later provider JSON-validation response, so no successful end-to-end Groq result is
-claimed yet. It does not silently fall back to another model. Use the deterministic path for
-routine CI and local development. Resource limits keep `maxCostUsd` for provider-reported billing
-and `maxNominalCostUsd` for the published-rate estimate; free-tier coverage is recorded separately.
+agent now requests strict JSON Schema output and preserves the host-controlled assistant/result
+history across turns; deterministic protocol tests cover both requirements. A prior live fixture
+proved authentication and the adapter smoke path, but failed on a later provider
+`json_validate_failed` response. No post-correction live end-to-end result is claimed in this
+checkout because no Groq credential is present. It does not silently fall back to another model.
+Use the deterministic path for routine CI and local development. Resource limits keep
+`maxCostUsd` for provider-reported billing and `maxNominalCostUsd` for the published-rate
+estimate; free-tier coverage is recorded separately.
 
 The controlled editing study is available offline by default:
 
